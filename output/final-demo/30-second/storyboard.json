@@ -1,0 +1,184 @@
+{
+  "title": "How an API Request Travels Through a Backend System (30s Edition)",
+  "mode": "technical",
+  "target_duration": 30.0,
+  "aspect_ratio": "16:9",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "scenes": [
+    {
+      "scene_id": "scene_01_hook",
+      "duration": 8.0,
+      "narration": "Every time you click a button online, a complex packet journey begins across distributed networks.",
+      "educational_objective": "Hook the viewer with the invisible complexity of modern backend systems.",
+      "visual_type": "cinematic_title",
+      "visual_spec": {
+        "headline": "HOW AN API REQUEST TRAVELS THROUGH A BACKEND SYSTEM",
+        "subline": "The Invisible Journey of Distributed Systems",
+        "badge": "DISTRIBUTED SYSTEMS 101",
+        "diagram_nodes": [],
+        "diagram_edges": [],
+        "flow_packets": [],
+        "code_lines": [],
+        "highlighted_line": null,
+        "metric_cards": [],
+        "theme": "dark_cyan"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "impactSoft_medium_001.ogg",
+        "music_track": "happy-beats-business-moves-vol-10-by-ende-dot-app.mp3",
+        "music_volume": 0.12
+      },
+      "transition": "crossfade"
+    },
+    {
+      "scene_id": "scene_02_mechanism",
+      "duration": 14.0,
+      "narration": "Your request first hits the API Gateway for TLS termination and authentication, then routes directly through internal microservices into database indexes.",
+      "educational_objective": "Demonstrate multi-tier gateway routing, security validation, and database access.",
+      "visual_type": "flow_animation",
+      "visual_spec": {
+        "headline": "REQUEST ROUTING PIPELINE",
+        "subline": "TLS Termination → JWT Auth → Microservice Routing",
+        "badge": "STAGE 2: PACKET TRAVERSAL",
+        "diagram_nodes": [
+          {
+            "id": "client",
+            "label": "Client App",
+            "x": 300,
+            "y": 540,
+            "color": "#38BDF8",
+            "icon": "laptop"
+          },
+          {
+            "id": "gateway",
+            "label": "API Gateway",
+            "x": 750,
+            "y": 540,
+            "color": "#818CF8",
+            "icon": "shield"
+          },
+          {
+            "id": "service",
+            "label": "Order Service",
+            "x": 1200,
+            "y": 540,
+            "color": "#34D399",
+            "icon": "server"
+          },
+          {
+            "id": "db",
+            "label": "Database",
+            "x": 1620,
+            "y": 540,
+            "color": "#F472B6",
+            "icon": "database"
+          }
+        ],
+        "diagram_edges": [
+          {
+            "from": "client",
+            "to": "gateway",
+            "label": "HTTPS / TLS"
+          },
+          {
+            "from": "gateway",
+            "to": "service",
+            "label": "gRPC Mesh"
+          },
+          {
+            "from": "service",
+            "to": "db",
+            "label": "SQL Query"
+          }
+        ],
+        "flow_packets": [
+          {
+            "from": "client",
+            "to": "gateway",
+            "t_start": 0.0,
+            "t_end": 0.35,
+            "label": "POST /order"
+          },
+          {
+            "from": "gateway",
+            "to": "service",
+            "t_start": 0.35,
+            "t_end": 0.7,
+            "label": "Auth OK"
+          },
+          {
+            "from": "service",
+            "to": "db",
+            "t_start": 0.7,
+            "t_end": 1.0,
+            "label": "Index Lookup"
+          }
+        ],
+        "code_lines": [],
+        "highlighted_line": null,
+        "metric_cards": [],
+        "theme": "cyber_dark"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "impactSoft_medium_004.ogg",
+        "music_track": "happy-beats-business-moves-vol-10-by-ende-dot-app.mp3",
+        "music_volume": 0.1
+      },
+      "transition": "crossfade"
+    },
+    {
+      "scene_id": "scene_03_takeaway",
+      "duration": 8.0,
+      "narration": "In less than fifty milliseconds, state is committed and confirmed, delivering sub-second experiences to millions of users.",
+      "educational_objective": "Anchor the speed and engineering discipline of modern architectures.",
+      "visual_type": "metric_grid",
+      "visual_spec": {
+        "headline": "SYSTEM PERFORMANCE METRICS",
+        "subline": "Deterministic Low-Latency Delivery",
+        "badge": "PRODUCTION METRICS",
+        "diagram_nodes": [],
+        "diagram_edges": [],
+        "flow_packets": [],
+        "code_lines": [],
+        "highlighted_line": null,
+        "metric_cards": [
+          {
+            "label": "TLS Handshake",
+            "value": "12 ms",
+            "desc": "Encrypted session"
+          },
+          {
+            "label": "Gateway Auth",
+            "value": "3 ms",
+            "desc": "JWT validation"
+          },
+          {
+            "label": "Database Query",
+            "value": "18 ms",
+            "desc": "B-Tree indexed lookup"
+          },
+          {
+            "label": "Total Latency",
+            "value": "45 ms",
+            "desc": "Round-trip completed"
+          }
+        ],
+        "theme": "dark_cyan"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "impactSoft_medium_002.ogg",
+        "music_track": "happy-beats-business-moves-vol-10-by-ende-dot-app.mp3",
+        "music_volume": 0.12
+      },
+      "transition": "crossfade"
+    }
+  ]
+}

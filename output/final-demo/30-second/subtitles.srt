@@ -1,0 +1,11 @@
+1
+00:00:00,050 --> 00:00:06,527
+Every time you click a button online, a complex packet journey begins across distributed networks.
+
+2
+00:00:06,979 --> 00:00:17,082
+Your request first hits the API Gateway for TLS termination and authentication, then routes directly through internal microservices into database indexes.
+
+3
+00:00:17,530 --> 00:00:25,615
+In less than fifty milliseconds, state is committed and confirmed, delivering sub-second experiences to millions of users.

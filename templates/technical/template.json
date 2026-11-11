@@ -1,0 +1,36 @@
+{
+  "mode": "technical",
+  "pacing_wpm": 135,
+  "style": {
+    "theme": "cyber_dark",
+    "primary_color": "#00F2FE",
+    "accent_color": "#10B981",
+    "background_color": "#090D16"
+  },
+  "structure": [
+    {
+      "role": "hook_architecture",
+      "target_duration_ratio": 0.15,
+      "objective": "Establish high-level system topology and throughput constraints.",
+      "visual_preference": "architecture_diagram"
+    },
+    {
+      "role": "request_pipeline",
+      "target_duration_ratio": 0.30,
+      "objective": "Trace packet traversal through TLS, Gateway, Auth, and Routing.",
+      "visual_preference": "flow_animation"
+    },
+    {
+      "role": "code_execution",
+      "target_duration_ratio": 0.35,
+      "objective": "Inspect backend handler logic, database indexing, and cache hits.",
+      "visual_preference": "code_walkthrough"
+    },
+    {
+      "role": "tradeoffs_production",
+      "target_duration_ratio": 0.20,
+      "objective": "Summarize latency numbers, concurrency models, and failure modes.",
+      "visual_preference": "metric_grid"
+    }
+  ]
+}

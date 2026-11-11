@@ -1,0 +1,36 @@
+{
+  "mode": "beginner",
+  "pacing_wpm": 120,
+  "style": {
+    "theme": "warm_modern",
+    "primary_color": "#38BDF8",
+    "accent_color": "#F472B6",
+    "background_color": "#0F172A"
+  },
+  "structure": [
+    {
+      "role": "hook",
+      "target_duration_ratio": 0.15,
+      "objective": "Capture curiosity with a relatable daily life analogy.",
+      "visual_preference": "concept_card"
+    },
+    {
+      "role": "mental_model",
+      "target_duration_ratio": 0.30,
+      "objective": "Introduce a simplified, non-technical visual model.",
+      "visual_preference": "flow_animation"
+    },
+    {
+      "role": "mechanism",
+      "target_duration_ratio": 0.35,
+      "objective": "Explain the step-by-step path simply without overwhelming jargon.",
+      "visual_preference": "architecture_diagram"
+    },
+    {
+      "role": "takeaway",
+      "target_duration_ratio": 0.20,
+      "objective": "Reinforce the core mental model and practical benefit.",
+      "visual_preference": "metric_grid"
+    }
+  ]
+}

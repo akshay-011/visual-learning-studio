@@ -1,0 +1,44 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Caches & Logs
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# Temporary render files
+.tmp/
+tmp/
+temp_renders/
+*.tmp
+
+# Output intermediates (preserve final-demo)
+output/work/
+output/cache/
+output/temp/
+
+# Environment
+.env
+.env.local

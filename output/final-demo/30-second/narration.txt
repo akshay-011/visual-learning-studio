@@ -1,0 +1,5 @@
+[scene_01_hook] Every time you click a button online, a complex packet journey begins across distributed networks.
+
+[scene_02_mechanism] Your request first hits the API Gateway for TLS termination and authentication, then routes directly through internal microservices into database indexes.
+
+[scene_03_takeaway] In less than fifty milliseconds, state is committed and confirmed, delivering sub-second experiences to millions of users.

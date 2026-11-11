@@ -1,0 +1,316 @@
+{
+  "title": "How an API Request Travels Through a Backend System (Full 60s Edition)",
+  "mode": "technical",
+  "target_duration": 60.0,
+  "aspect_ratio": "16:9",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "scenes": [
+    {
+      "scene_id": "scene_01_hook",
+      "duration": 9.0,
+      "narration": "Every time you tap 'Buy Now', an invisible journey begins across modern distributed infrastructure.",
+      "educational_objective": "Capture immediate interest with the hidden scale of an everyday digital transaction.",
+      "visual_type": "cinematic_title",
+      "visual_spec": {
+        "headline": "HOW AN API REQUEST TRAVELS",
+        "subline": "Anatomy of a Distributed Backend Transaction",
+        "badge": "SYSTEM ARCHITECTURE",
+        "diagram_nodes": [],
+        "diagram_edges": [],
+        "flow_packets": [],
+        "code_lines": [],
+        "highlighted_line": null,
+        "metric_cards": [],
+        "theme": "dark_cyan"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "impactSoft_medium_001.ogg",
+        "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
+        "music_volume": 0.12
+      },
+      "transition": "crossfade"
+    },
+    {
+      "scene_id": "scene_02_gateway",
+      "duration": 13.0,
+      "narration": "Your request connects to the API Gateway. Here, TLS encryption terminates, JWT security tokens are verified, and rate limits are strictly enforced.",
+      "educational_objective": "Explain the critical security, proxy, and rate-limiting roles of the API gateway tier.",
+      "visual_type": "architecture_diagram",
+      "visual_spec": {
+        "headline": "THE INGRESS GATEWAY",
+        "subline": "TLS 1.3 Termination • JWT Token Verification • Rate Limiting",
+        "badge": "TIER 1: EDGE & INGRESS",
+        "diagram_nodes": [
+          {
+            "id": "client",
+            "label": "Client / Browser",
+            "x": 240,
+            "y": 540,
+            "color": "#38BDF8",
+            "icon": "laptop"
+          },
+          {
+            "id": "dns_cdn",
+            "label": "Edge / DNS",
+            "x": 600,
+            "y": 380,
+            "color": "#FBBF24",
+            "icon": "globe"
+          },
+          {
+            "id": "gateway",
+            "label": "API Gateway",
+            "x": 960,
+            "y": 540,
+            "color": "#818CF8",
+            "icon": "shield"
+          }
+        ],
+        "diagram_edges": [
+          {
+            "from": "client",
+            "to": "dns_cdn",
+            "label": "DNS Query"
+          },
+          {
+            "from": "client",
+            "to": "gateway",
+            "label": "HTTPS TLS 1.3"
+          }
+        ],
+        "flow_packets": [],
+        "code_lines": [],
+        "highlighted_line": null,
+        "metric_cards": [],
+        "theme": "cyber_dark"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "impactSoft_medium_004.ogg",
+        "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
+        "music_volume": 0.1
+      },
+      "transition": "crossfade"
+    },
+    {
+      "scene_id": "scene_03_flow",
+      "duration": 15.0,
+      "narration": "Inside the private cluster, the request routes to the Order Service. It queries an in-memory Redis cache before reaching database indexes in microseconds.",
+      "educational_objective": "Visualize distributed service mesh routing, caching layers, and database lookups.",
+      "visual_type": "flow_animation",
+      "visual_spec": {
+        "headline": "DISTRIBUTED SERVICE MESH",
+        "subline": "High-Speed Inter-Process RPC & Memory Cache Inspection",
+        "badge": "TIER 2: SERVICE DISPATCH",
+        "diagram_nodes": [
+          {
+            "id": "client",
+            "label": "Client / Browser",
+            "x": 240,
+            "y": 540,
+            "color": "#38BDF8",
+            "icon": "laptop"
+          },
+          {
+            "id": "dns_cdn",
+            "label": "Edge / DNS",
+            "x": 600,
+            "y": 380,
+            "color": "#FBBF24",
+            "icon": "globe"
+          },
+          {
+            "id": "gateway",
+            "label": "API Gateway",
+            "x": 960,
+            "y": 540,
+            "color": "#818CF8",
+            "icon": "shield"
+          },
+          {
+            "id": "service",
+            "label": "Order Service",
+            "x": 1340,
+            "y": 420,
+            "color": "#34D399",
+            "icon": "server"
+          },
+          {
+            "id": "cache",
+            "label": "Redis Cache",
+            "x": 1340,
+            "y": 700,
+            "color": "#F87171",
+            "icon": "layers"
+          },
+          {
+            "id": "db",
+            "label": "PostgreSQL DB",
+            "x": 1680,
+            "y": 540,
+            "color": "#C084FC",
+            "icon": "database"
+          }
+        ],
+        "diagram_edges": [
+          {
+            "from": "client",
+            "to": "dns_cdn",
+            "label": "DNS Query"
+          },
+          {
+            "from": "client",
+            "to": "gateway",
+            "label": "HTTPS TLS 1.3"
+          },
+          {
+            "from": "gateway",
+            "to": "service",
+            "label": "Internal Mesh"
+          },
+          {
+            "from": "service",
+            "to": "cache",
+            "label": "Sub-millisecond Read"
+          },
+          {
+            "from": "service",
+            "to": "db",
+            "label": "Indexed SQL Write"
+          }
+        ],
+        "flow_packets": [
+          {
+            "from": "client",
+            "to": "gateway",
+            "t_start": 0.0,
+            "t_end": 0.25,
+            "label": "HTTPS Request"
+          },
+          {
+            "from": "gateway",
+            "to": "service",
+            "t_start": 0.25,
+            "t_end": 0.5,
+            "label": "Internal RPC"
+          },
+          {
+            "from": "service",
+            "to": "cache",
+            "t_start": 0.5,
+            "t_end": 0.75,
+            "label": "Cache Check"
+          },
+          {
+            "from": "service",
+            "to": "db",
+            "t_start": 0.75,
+            "t_end": 1.0,
+            "label": "SQL Commit"
+          }
+        ],
+        "code_lines": [],
+        "highlighted_line": null,
+        "metric_cards": [],
+        "theme": "cyber_dark"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "impactSoft_medium_003.ogg",
+        "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
+        "music_volume": 0.1
+      },
+      "transition": "crossfade"
+    },
+    {
+      "scene_id": "scene_04_code",
+      "duration": 13.0,
+      "narration": "Here in the backend controller, asynchronous workers process business validation, commit database transactions, and dispatch confirmation events.",
+      "educational_objective": "Anchor the architecture with real executable controller logic and database mutations.",
+      "visual_type": "code_walkthrough",
+      "visual_spec": {
+        "headline": "CONTROLLER IMPLEMENTATION",
+        "subline": "Asynchronous Non-Blocking Request Handling",
+        "badge": "SOURCE CODE INSPECTION",
+        "diagram_nodes": [],
+        "diagram_edges": [],
+        "flow_packets": [],
+        "code_lines": [
+          "@app.post('/api/checkout')",
+          "async def handle_order(req: OrderRequest, user = Depends(verify_jwt)):",
+          "    cached_session = await redis_client.get(f'user:{user.id}')",
+          "    if not cached_session:",
+          "        raise HTTPException(status_code=401, detail='Session Expired')",
+          "    order_id = await db.orders.insert({'user': user.id, 'items': req.items})",
+          "    await event_bus.publish('order_placed', {'order_id': order_id})",
+          "    return {'status': 'confirmed', 'order_id': order_id, 'latency_ms': 34}"
+        ],
+        "highlighted_line": 5,
+        "metric_cards": [],
+        "theme": "cyber_dark"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "keyboard/keypress-001.wav",
+        "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
+        "music_volume": 0.1
+      },
+      "transition": "crossfade"
+    },
+    {
+      "scene_id": "scene_05_summary",
+      "duration": 10.0,
+      "narration": "In under fifty milliseconds, the response returns—a testament to the precision of modern distributed software engineering.",
+      "educational_objective": "Synthesize the educational takeaways with performance metrics and closing reflection.",
+      "visual_type": "metric_grid",
+      "visual_spec": {
+        "headline": "TRANSACTION SUMMARY",
+        "subline": "End-to-End Latency: 42ms • Zero Data Loss",
+        "badge": "KEY TAKEAWAYS",
+        "diagram_nodes": [],
+        "diagram_edges": [],
+        "flow_packets": [],
+        "code_lines": [],
+        "highlighted_line": null,
+        "metric_cards": [
+          {
+            "label": "Edge Routing",
+            "value": "11 ms",
+            "desc": "TLS & DNS overhead"
+          },
+          {
+            "label": "Auth & Gateway",
+            "value": "4 ms",
+            "desc": "Token validation"
+          },
+          {
+            "label": "Cache Query",
+            "value": "1 ms",
+            "desc": "Redis memory hit"
+          },
+          {
+            "label": "Database Write",
+            "value": "19 ms",
+            "desc": "B-Tree indexed commit"
+          }
+        ],
+        "theme": "dark_cyan"
+      },
+      "audio_spec": {
+        "narration_voice": "en-US-ChristopherNeural",
+        "speech_rate": "+0%",
+        "sfx_cue": "impactSoft_medium_002.ogg",
+        "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
+        "music_volume": 0.12
+      },
+      "transition": "crossfade"
+    }
+  ]
+}

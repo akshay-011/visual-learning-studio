@@ -1,0 +1,36 @@
+{
+  "mode": "documentary",
+  "pacing_wpm": 115,
+  "style": {
+    "theme": "cinematic_monochrome_accent",
+    "primary_color": "#E0E7FF",
+    "accent_color": "#F59E0B",
+    "background_color": "#030712"
+  },
+  "structure": [
+    {
+      "role": "cinematic_hook",
+      "target_duration_ratio": 0.20,
+      "objective": "Introduce the hidden global scale and invisible pulse of the system.",
+      "visual_preference": "cinematic_title"
+    },
+    {
+      "role": "historical_genesis",
+      "target_duration_ratio": 0.25,
+      "objective": "Reveal why existing solutions collapsed and necessitated this architecture.",
+      "visual_preference": "concept_card"
+    },
+    {
+      "role": "internal_machinery",
+      "target_duration_ratio": 0.35,
+      "objective": "Journey deep into the silicon, routing protocols, and distributed consensus.",
+      "visual_preference": "flow_animation"
+    },
+    {
+      "role": "future_vista",
+      "target_duration_ratio": 0.20,
+      "objective": "Awe-inspiring conclusion reflecting on modern software engineering.",
+      "visual_preference": "metric_grid"
+    }
+  ]
+}

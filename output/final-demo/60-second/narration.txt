@@ -1,0 +1,9 @@
+[scene_01_hook] Every time you tap 'Buy Now', an invisible journey begins across modern distributed infrastructure.
+
+[scene_02_gateway] Your request connects to the API Gateway. Here, TLS encryption terminates, JWT security tokens are verified, and rate limits are strictly enforced.
+
+[scene_03_flow] Inside the private cluster, the request routes to the Order Service. It queries an in-memory Redis cache before reaching database indexes in microseconds.
+
+[scene_04_code] Here in the backend controller, asynchronous workers process business validation, commit database transactions, and dispatch confirmation events.
+
+[scene_05_summary] In under fifty milliseconds, the response returns—a testament to the precision of modern distributed software engineering.
