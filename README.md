@@ -76,7 +76,7 @@ Visual Learning Studio requires only standard Linux or macOS media packages:
 
 ### 1. Clone the Codebase
 ```bash
-git clone https://github.com/omarchy/visual-learning-studio.git
+git clone https://github.com/akshay-011/visual-learning-studio.git
 cd visual-learning-studio
 ```
 
