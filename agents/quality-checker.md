@@ -1,3 +1,8 @@
+---
+name: quality-checker
+description: Automated video inspection gate verifying MP4 container validity, codecs, resolutions, and stream synchronization.
+---
+
 # Quality Checker Agent
 
 ## Role Definition

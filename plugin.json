@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "visual-learning-studio",
+  "version": "1.0.0",
+  "description": "Zero-cost autonomous educational video production studio. Transforms technical topics, GitHub repositories, research papers, or documentation into broadcast-quality 1080p educational videos with animated diagrams, neural voiceover, background music, SFX, and synchronized subtitles.",
+  "author": {
+    "name": "Akshay",
+    "email": "akshay@local"
+  },
+  "license": "MIT",
+  "keywords": [
+    "educational-video",
+    "video-production",
+    "visual-learning",
+    "diagrams",
+    "ffmpeg",
+    "animation",
+    "zero-cost"
+  ]
+}

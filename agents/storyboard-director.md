@@ -1,3 +1,8 @@
+---
+name: storyboard-director
+description: Plans and structures pedagogical video storyboards into machine-validated JSON conforming to schemas.
+---
+
 # Storyboard Director Agent
 
 ## Role Definition

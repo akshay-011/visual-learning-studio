@@ -1,3 +1,8 @@
+---
+name: visual-director
+description: Directs visual design, color palettes, geometric layouts, and animation motion timing across video frames.
+---
+
 # Visual Director Agent
 
 ## Role Definition

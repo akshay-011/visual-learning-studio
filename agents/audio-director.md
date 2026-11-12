@@ -1,3 +1,8 @@
+---
+name: audio-director
+description: Directs voice synthesis, background music selection, and sound effect synchronization for educational video production.
+---
+
 # Audio Director Agent
 
 ## Role Definition

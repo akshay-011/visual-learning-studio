@@ -1,3 +1,8 @@
+---
+name: scriptwriter
+description: Writes spoken educational dialogue scripts with natural cadence and strict word-budget timing for videos.
+---
+
 # Scriptwriter Agent
 
 ## Role Definition

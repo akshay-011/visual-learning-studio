@@ -1,3 +1,8 @@
+---
+name: researcher
+description: Researches and analyzes complex technical inputs, source code, and architecture docs for video production.
+---
+
 # Researcher Agent
 
 ## Role Definition
