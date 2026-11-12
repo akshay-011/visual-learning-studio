@@ -11,6 +11,13 @@ WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
 if str(WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(WORKSPACE_ROOT))
 
+from src.audio.cloner import (
+    DEFAULT_PROMPT_SENTENCE,
+    enroll_voice,
+    list_voice_profiles,
+    load_voice_profile,
+    record_voice_clip,
+)
 from src.discovery.hardware import detect_hardware
 from src.orchestration.pipeline import produce_video
 
@@ -87,8 +94,117 @@ def main():
         default=False,
         help="Include contextual sound effects in audio mix (default: False).",
     )
+    parser.add_argument(
+        "--record-voice",
+        action="store_true",
+        help="Record voice from microphone and enroll a new cloned voice profile.",
+    )
+    parser.add_argument(
+        "--record-seconds",
+        type=float,
+        default=8.0,
+        help="Duration in seconds to record voice sample (default: 8.0).",
+    )
+    parser.add_argument(
+        "--voice-profile",
+        type=str,
+        default=None,
+        help="Voice profile name to use or save recording under (default: 'my_voice').",
+    )
+    parser.add_argument(
+        "--clone-voice",
+        type=str,
+        default=None,
+        help="Path to an existing audio file (.wav, .mp3) to clone into a voice profile.",
+    )
+    parser.add_argument(
+        "--list-voices",
+        action="store_true",
+        help="List all enrolled local voice profiles.",
+    )
 
     args = parser.parse_args()
+
+    if args.list_voices:
+        profiles = list_voice_profiles()
+        print("=" * 65)
+        print(" ENROLLED VOICE CLONE PROFILES")
+        print("=" * 65)
+        if not profiles:
+            print("No voice profiles enrolled yet.")
+            print("To enroll a voice, run:")
+            print("  ./scripts/studio.py --record-voice --voice-profile my_voice")
+        else:
+            for p in profiles:
+                print(f"Profile:     {p.profile_name}")
+                print(f"Pitch (F0):  {p.f0_median_hz} Hz ({p.vocal_register})")
+                print(f"Base Model:  {p.base_voice} (Pitch Shift: {p.pitch_ratio:.2f}x, {p.pitch_semitones:+.1f} st)")
+                print(f"Reference:   {p.reference_audio}")
+                print(f"Enrolled At: {p.created_at}")
+                print("-" * 65)
+        print("=" * 65)
+        return
+
+    # Handle Voice Enrollment via Microphone Recording
+    if args.record_voice:
+        profile_name = args.voice_profile or "my_voice"
+        print("=" * 65)
+        print(" VISUAL LEARNING STUDIO - VOICE ENROLLMENT")
+        print("=" * 65)
+        print(f"Target Profile:    '{profile_name}'")
+        print(f"Capture Interface: Default System Audio Input (PipeWire / ALSA)")
+        print(f"Duration:          {args.record_seconds:.1f} seconds")
+        print("-" * 65)
+        print("Please read this calibration passage clearly into your microphone:")
+        print(f"\n  \"{DEFAULT_PROMPT_SENTENCE}\"\n")
+        print("-" * 65)
+
+        try:
+            input("Press [Enter] when ready to begin speaking (recording starts immediately)... ")
+        except (EOFError, KeyboardInterrupt):
+            print("\nStarting recording immediately...")
+
+        print(f"[*] Recording for {args.record_seconds:.1f}s... (Speak now!)")
+        temp_rec = Path(f"/tmp/enroll_{profile_name}_{int(time.time())}.wav")
+        try:
+            record_voice_clip(temp_rec, duration_seconds=args.record_seconds)
+            profile = enroll_voice(temp_rec, profile_name=profile_name)
+            print("\n" + "=" * 65)
+            print(" VOICE ENROLLMENT COMPLETED SUCCESSFULLY")
+            print("=" * 65)
+            print(f"Profile Name:     {profile.profile_name}")
+            print(f"Reference Audio:  {profile.reference_audio}")
+            print(f"Detected Pitch:   {profile.f0_median_hz} Hz ({profile.vocal_register})")
+            print(f"Base Model Match: {profile.base_voice} (Shift: {profile.pitch_ratio:.2f}x, {profile.pitch_semitones:+.1f} st)")
+            print(f"Formant Offsets:  Sub:{profile.eq_gains.get('sub_bass',0):+.1f}dB | "
+                  f"Mid:{profile.eq_gains.get('mid',0):+.1f}dB | "
+                  f"Pres:{profile.eq_gains.get('presence',0):+.1f}dB")
+            print("=" * 65)
+            print(f"To use your cloned voice in any video:")
+            print(f"  ./scripts/run_production.sh --topic \"...\" --voice-profile {profile.profile_name}")
+            print("=" * 65)
+        finally:
+            if temp_rec.exists():
+                temp_rec.unlink()
+
+        # If user only wanted to record voice and provided no topic/repo, exit now
+        if not (args.topic or args.repo or args.pdf or args.url):
+            return
+
+    # Handle Voice Enrollment via Audio File Import
+    if args.clone_voice and not (args.topic or args.repo or args.pdf or args.url):
+        sample_path = Path(args.clone_voice)
+        profile_name = args.voice_profile or sample_path.stem.replace(" ", "_").lower()
+        profile = enroll_voice(sample_path, profile_name=profile_name)
+        print("=" * 65)
+        print(f" VOICE ENROLLED FROM AUDIO FILE: '{sample_path.name}'")
+        print("=" * 65)
+        print(f"Profile Name:     {profile.profile_name}")
+        print(f"Detected Pitch:   {profile.f0_median_hz} Hz ({profile.vocal_register})")
+        print(f"Base Model Match: {profile.base_voice} (Shift: {profile.pitch_ratio:.2f}x)")
+        print(f"Reference Audio:  {profile.reference_audio}")
+        print("=" * 65)
+        return
 
     if args.check_hardware:
         hw = detect_hardware()
@@ -122,6 +238,7 @@ def main():
     print(f"[*] Output:   {output_dir}")
 
     burn_subs = args.burn_subtitles and not args.no_subtitles
+    voice_prof = args.voice_profile or args.clone_voice
 
     mp4_path, storyboard, qc = produce_video(
         source_input=source,
@@ -131,6 +248,7 @@ def main():
         burn_subtitles=burn_subs,
         include_music=args.include_music,
         include_sfx=args.include_sfx,
+        voice_profile=voice_prof,
     )
 
     print("\n" + "=" * 60)

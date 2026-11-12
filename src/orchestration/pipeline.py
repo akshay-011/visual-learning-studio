@@ -5,8 +5,9 @@ import os
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+from src.audio.cloner import VoiceProfile, load_voice_profile
 from src.audio.sound_mixer import build_mixed_soundtrack
 from src.audio.tts_engine import SynthesizedAudio, synthesize_narration
 from src.composition.ffmpeg_renderer import compose_final_video
@@ -37,6 +38,7 @@ def produce_video(
     burn_subtitles: bool = False,
     include_music: bool = False,
     include_sfx: bool = False,
+    voice_profile: Optional[Union[str, Path, VoiceProfile]] = None,
 ) -> Tuple[Path, Storyboard, QualityCheckResult]:
     """Autonomous End-to-End Video Production Engine."""
     start_time = time.time()
@@ -46,6 +48,22 @@ def produce_video(
 
     if assets_dir is None:
         assets_dir = Path("/home/akshay/workspace/make-video/assets")
+
+    # Resolve Voice Profile if provided
+    resolved_profile: Optional[VoiceProfile] = None
+    if voice_profile is not None:
+        if isinstance(voice_profile, VoiceProfile):
+            resolved_profile = voice_profile
+        else:
+            resolved_profile = load_voice_profile(
+                str(voice_profile), voices_dir=assets_dir / "voices"
+            )
+        print(
+            f"[*] Voice Cloning Active: '{resolved_profile.profile_name}' "
+            f"(F0: {resolved_profile.f0_median_hz} Hz, "
+            f"Register: {resolved_profile.vocal_register}, "
+            f"Base: {resolved_profile.base_voice})"
+        )
 
     # 1. Hardware Detection
     hw = detect_hardware()
@@ -80,7 +98,12 @@ def produce_video(
     for idx, scene in enumerate(storyboard.scenes):
         wav_path = work_dir / f"dialogue_{scene.scene_id}.wav"
         voice = scene.audio_spec.narration_voice or "en-US-AndrewNeural"
-        synth = synthesize_narration(scene.narration, wav_path, voice=voice)
+        synth = synthesize_narration(
+            scene.narration,
+            wav_path,
+            voice=voice,
+            voice_profile=resolved_profile,
+        )
 
         # Pad duration slightly for natural human pauses between scenes (+0.4s)
         pad_pause = 0.4

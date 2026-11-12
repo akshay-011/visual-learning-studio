@@ -7,10 +7,13 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import edge_tts
 
 from src.audio.voicestudio import process_human_cadence, get_vocal_studio_filter
+
+if TYPE_CHECKING:
+    from src.audio.cloner import VoiceProfile
 
 
 @dataclass
@@ -39,8 +42,12 @@ async def _synthesize_edge_tts(
     output_wav: Path,
     rate: str = "-3%",
     max_retries: int = 4,
+    voice_profile: Optional["VoiceProfile"] = None,
 ) -> SynthesizedAudio:
-    """Internal coroutine for edge-tts streaming with VoiceStudio cadence and mastering."""
+    """Internal coroutine for edge-tts streaming with VoiceStudio cadence and optional voice cloning."""
+    # If a voice profile is provided, use its matched base neural voice
+    effective_voice = voice_profile.base_voice if voice_profile else voice
+
     # Pre-process text through VoiceStudio pronunciation lexicon and human prosody
     human_text = process_human_cadence(text)
 
@@ -52,7 +59,7 @@ async def _synthesize_edge_tts(
 
     for attempt in range(max_retries):
         try:
-            communicate = edge_tts.Communicate(human_text, voice, rate=rate)
+            communicate = edge_tts.Communicate(human_text, effective_voice, rate=rate)
             submaker = edge_tts.SubMaker()
 
             with open(temp_mp3, "wb") as f:
@@ -84,12 +91,19 @@ async def _synthesize_edge_tts(
         except Exception as e:
             raise RuntimeError(f"Edge-TTS synthesis failed after retries: {last_err or e}")
 
+    # Determine audio filter: use VoiceProfile rubberband+formant filter if available, else studio mastering
+    if voice_profile is not None:
+        from src.audio.cloner import get_voice_clone_filter
+        audio_filter = get_voice_clone_filter(voice_profile)
+    else:
+        audio_filter = get_vocal_studio_filter()
+
     # Transcode to broadcast standard PCM 16-bit 48,000 Hz Stereo WAV with VoiceStudio mastering
     cmd = [
         "ffmpeg",
         "-y",
         "-i", str(temp_mp3),
-        "-af", get_vocal_studio_filter(),
+        "-af", audio_filter,
         "-ar", "48000",
         "-ac", "2",
         "-c:a", "pcm_s16le",
@@ -115,6 +129,9 @@ def synthesize_narration(
     output_wav: Path,
     voice: str = "en-US-AndrewNeural",
     rate: str = "-3%",
+    voice_profile: Optional["VoiceProfile"] = None,
 ) -> SynthesizedAudio:
-    """Synchronous interface for neural voiceover synthesis."""
-    return asyncio.run(_synthesize_edge_tts(text, voice, output_wav, rate=rate))
+    """Synchronous interface for neural voiceover synthesis with optional voice cloning."""
+    return asyncio.run(
+        _synthesize_edge_tts(text, voice, output_wav, rate=rate, voice_profile=voice_profile)
+    )

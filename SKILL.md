@@ -22,9 +22,35 @@ Common triggers:
 
 - **No paid API subscriptions:** Never require or call paid APIs (OpenAI, Anthropic, ElevenLabs, Runway, Midjourney, Replicate, MuAPI).
 - **Local Inference:** AI cognition uses local Ollama (`qwen2.5-coder:7b` / `gemma4`) or built-in deterministic heuristic fallback.
-- **Voiceover:** Powered by zero-cost neural TTS with VoiceStudio human conversational prosody, technical acronym pronunciation dictionary, and 5-stage broadcast vocal mastering chain (`en-US-AndrewNeural`).
+- **Voiceover & Voice Cloning:** Powered by zero-cost neural TTS with VoiceStudio human conversational prosody, technical acronym pronunciation dictionary, and 5-stage broadcast vocal mastering chain (`en-US-AndrewNeural`). Supports recording user voice (`--record-voice`) or cloning existing audio samples (`--clone-voice`) using real-time formant-preserving pitch/timbre shifting (`librubberband`).
 - **Visuals:** 1080p programmatic animations, glowing network diagrams, data packet simulations, syntax-highlighted code editors, and metric dashboards rendered via Pillow + FFmpeg hardware acceleration (`h264_nvenc`).
 - **Subtitles & Music:** Subtitles burning and background music are disabled by default for clean presentation; enabled on demand via `--burn-subtitles` and `--include-music`.
+
+## Voice Recording & Cloning Workflow
+
+You can record your own voice and use your cloned vocal timbre for narration:
+
+```bash
+# 1. Record voice from microphone (8 seconds calibration passage)
+./scripts/record_voice.sh my_voice 8
+
+# 2. List enrolled voice profiles
+python scripts/studio.py --list-voices
+
+# 3. Produce video using your cloned voice
+./scripts/run_production.sh \
+  --topic "Distributed Consensus with Raft" \
+  --mode technical \
+  --duration 60 \
+  --output-dir output/raft-video \
+  --voice-profile my_voice
+
+# Alternatively, clone directly from an existing audio file (.wav or .mp3)
+./scripts/run_production.sh \
+  --topic "Distributed Consensus with Raft" \
+  --clone-voice /path/to/my_recording.wav \
+  --output-dir output/raft-video
+```
 
 ## Production Execution Workflow
 
