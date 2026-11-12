@@ -17,6 +17,7 @@ from src.audio.cloner import (
     list_voice_profiles,
     load_voice_profile,
     record_voice_clip,
+    run_voice_match_setup,
 )
 from src.discovery.hardware import detect_hardware
 from src.orchestration.pipeline import produce_video
@@ -95,6 +96,11 @@ def main():
         help="Include contextual sound effects in audio mix (default: False).",
     )
     parser.add_argument(
+        "--setup-voice",
+        action="store_true",
+        help="Launch the Google Assistant-style 4-phrase Voice Match calibration wizard.",
+    )
+    parser.add_argument(
         "--record-voice",
         action="store_true",
         help="Record voice from microphone and enroll a new cloned voice profile.",
@@ -145,7 +151,14 @@ def main():
         print("=" * 65)
         return
 
-    # Handle Voice Enrollment via Microphone Recording
+    # Handle Google Assistant-style 4-Phase Voice Match Calibration
+    if args.setup_voice:
+        profile_name = args.voice_profile or "my_voice"
+        run_voice_match_setup(profile_name=profile_name)
+        if not (args.topic or args.repo or args.pdf or args.url):
+            return
+
+    # Handle Single-Pass Voice Enrollment via Microphone Recording
     if args.record_voice:
         profile_name = args.voice_profile or "my_voice"
         print("=" * 65)

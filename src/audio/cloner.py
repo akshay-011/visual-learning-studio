@@ -49,6 +49,38 @@ TARGET_BAND_PERCENTAGES = {
     "presence": 3.0,    # 5000 - 12000 Hz
 }
 
+# Google Assistant-style 4-stage Voice Match calibration prompts
+VOICE_MATCH_PROMPTS = [
+    {
+        "id": 1,
+        "title": "Conversational Greeting",
+        "text": "Hey Studio, what's on the schedule for today?",
+        "tip": "Speak in your natural, friendly conversational tone.",
+        "duration": 5.0,
+    },
+    {
+        "id": 2,
+        "title": "Declarative Architecture",
+        "text": "Distributed architectures scale horizontally by partitioning database tables.",
+        "tip": "Speak with clear declarative confidence and firm pacing.",
+        "duration": 5.5,
+    },
+    {
+        "id": 3,
+        "title": "Interrogative Inflection",
+        "text": "How does an in-memory cache prevent database read bottlenecks?",
+        "tip": "Speak naturally with a slight rising inflection at the end of the question.",
+        "duration": 5.0,
+    },
+    {
+        "id": 4,
+        "title": "Technical Mechanics",
+        "text": "Consensus protocols like Raft ensure exact replica synchronization across nodes.",
+        "tip": "Speak with crisp consonants and articulate pronunciation.",
+        "duration": 5.5,
+    },
+]
+
 
 class VoiceProfile(BaseModel):
     """Enrolled acoustic profile of a user or cloned speaker."""
@@ -67,6 +99,8 @@ class VoiceProfile(BaseModel):
     pitch_semitones: float
     eq_gains: Dict[str, float]
     speech_rms: float
+    takes: List[str] = Field(default_factory=list)
+    audition_audio: Optional[str] = None
     is_valid: bool = True
 
 
@@ -392,3 +426,227 @@ def get_voice_clone_filter(profile: VoiceProfile) -> str:
         get_vocal_studio_filter(),
     ]
     return ",".join(filters)
+
+
+def fuse_voice_takes(take_wavs: List[Path], output_composite_wav: Path) -> Path:
+    """Fuses multiple voice calibration takes into a single master reference WAV."""
+    if not take_wavs:
+        raise ValueError("Cannot fuse empty list of voice takes.")
+
+    output_composite_wav.parent.mkdir(parents=True, exist_ok=True)
+    if len(take_wavs) == 1:
+        shutil.copyfile(take_wavs[0], output_composite_wav)
+        return output_composite_wav
+
+    inputs = []
+    filter_inputs = []
+    for idx, take in enumerate(take_wavs):
+        inputs.extend(["-i", str(take)])
+        filter_inputs.append(f"[{idx}:a]")
+
+    filter_complex = f"{''.join(filter_inputs)}concat=n={len(take_wavs)}:v=0:a=1[out]"
+    cmd = [
+        "ffmpeg",
+        "-y",
+        *inputs,
+        "-filter_complex", filter_complex,
+        "-map", "[out]",
+        "-ar", "48000",
+        "-ac", "2",
+        "-c:a", "pcm_s16le",
+        str(output_composite_wav),
+    ]
+    subprocess.run(cmd, capture_output=True, check=True)
+    return output_composite_wav
+
+
+def play_audio_clip(wav_path: Path) -> bool:
+    """Plays an audio file using PipeWire (pw-play), ALSA (aplay), or FFmpeg (ffplay)."""
+    if not wav_path.exists():
+        return False
+
+    for cmd in [
+        ["pw-play", str(wav_path)],
+        ["paplay", str(wav_path)],
+        ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", str(wav_path)],
+        ["aplay", "-q", str(wav_path)],
+    ]:
+        try:
+            subprocess.run(cmd, timeout=8.0, check=True, capture_output=True)
+            return True
+        except Exception:
+            continue
+    return False
+
+
+def run_voice_match_setup(
+    profile_name: str = "my_voice",
+    voices_dir: Optional[Path] = None,
+    interactive: bool = True,
+    custom_takes: Optional[List[Path]] = None,
+    synthesize_audition: bool = True,
+) -> VoiceProfile:
+    """Interactive Google Assistant-style 4-phase Voice Match calibration wizard."""
+    if voices_dir is None:
+        voices_dir = Path(__file__).resolve().parent.parent.parent / "assets" / "voices"
+
+    profile_dir = voices_dir / profile_name
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    take_paths: List[Path] = []
+
+    if custom_takes is not None:
+        # Pre-supplied takes (for deterministic tests or automated batch enrollment)
+        take_paths = list(custom_takes)
+    else:
+        # Live interactive recording of the 4 Google Assistant-style calibration sentences
+        print("\n" + "=" * 70)
+        print(" 🎙️  VISUAL LEARNING STUDIO — VOICE MATCH SETUP")
+        print("=" * 70)
+        print(" Like setting up Google Assistant, you will speak 4 calibration phrases")
+        print(" to build your personalized voice model for video narration.")
+        print("-" * 70)
+        print(f" Target Profile:    '{profile_name}'")
+        print(f" Capture Interface: Default Audio Input (PipeWire / ALSA)")
+        print("=" * 70 + "\n")
+
+        total_prompts = len(VOICE_MATCH_PROMPTS)
+        for idx, prompt in enumerate(VOICE_MATCH_PROMPTS, start=1):
+            # Render visual phase indicator: [● ○ ○ ○]
+            dots = ["●" if i <= idx else "○" for i in range(1, total_prompts + 1)]
+            indicator = " ".join(dots)
+
+            take_wav = profile_dir / f"take_{idx}.wav"
+            captured = False
+
+            while not captured:
+                print(f"┌{'─' * 68}┐")
+                print(f"│ [{indicator}] Phrase {idx} of {total_prompts}: {prompt['title']:<42} │")
+                print(f"├{'─' * 68}┤")
+                print(f"│                                                                    │")
+                print(f"│  \"{prompt['text']}\"")
+                print(f"│                                                                    │")
+                print(f"│  💡 Tip: {prompt['tip']:<57} │")
+                print(f"└{'─' * 68}┘")
+
+                if interactive:
+                    try:
+                        input(f"\nPress [ENTER] when ready to speak ({prompt['duration']:.1f}s take)... ")
+                    except (EOFError, KeyboardInterrupt):
+                        print("\nStarting take immediately...")
+
+                print(f"[*] 🎙️ Listening... Speak now! ({prompt['duration']:.1f}s)")
+                record_voice_clip(take_wav, duration_seconds=prompt["duration"])
+
+                # Check capture energy
+                acoustics = analyze_voice_acoustics(take_wav)
+                if acoustics["speech_rms"] < 0.012:
+                    print("\n[!] ⚠️ Take was too quiet or microphone was silent.")
+                    print("[!] Please check microphone input and try again.\n")
+                    if not interactive:
+                        # In non-interactive mode, avoid infinite loop on quiet audio
+                        captured = True
+                        take_paths.append(take_wav)
+                else:
+                    print(f"[✓] Phrase {idx} captured! (Pitch: {acoustics['f0_median_hz']:.1f} Hz, Register: {acoustics['vocal_register']})\n")
+                    captured = True
+                    take_paths.append(take_wav)
+                    time.sleep(0.4)
+
+    # 1. Fuse all 4 takes into a master composite training reference
+    print("[*] ⚙️ Fusing voice calibration takes and extracting composite acoustics...")
+    master_ref = profile_dir / "reference.wav"
+    fuse_voice_takes(take_paths, master_ref)
+
+    # 2. Extract multi-sentence acoustic profile across the entire calibration corpus
+    acoustics = analyze_voice_acoustics(master_ref)
+
+    # 3. Synthesize Audition Test Clip with the newly enrolled voice
+    audition_path: Optional[Path] = None
+    if synthesize_audition:
+        try:
+            print("[*] 🔊 Synthesizing audition test clip with your cloned voice...")
+            from src.audio.tts_engine import synthesize_narration
+
+            temp_profile = VoiceProfile(
+                profile_name=profile_name,
+                reference_audio=str(master_ref.resolve()),
+                duration_seconds=acoustics["duration_seconds"],
+                f0_mean_hz=acoustics["f0_mean_hz"],
+                f0_median_hz=acoustics["f0_median_hz"],
+                f0_std_hz=acoustics["f0_std_hz"],
+                vocal_register=acoustics["vocal_register"],
+                base_voice=acoustics["base_voice"],
+                base_f0_hz=acoustics["base_f0_hz"],
+                pitch_ratio=acoustics["pitch_ratio"],
+                pitch_semitones=acoustics["pitch_semitones"],
+                eq_gains=acoustics["eq_gains"],
+                speech_rms=acoustics["speech_rms"],
+                takes=[str(p.resolve()) for p in take_paths],
+                is_valid=True,
+            )
+
+            audition_wav = profile_dir / "audition.wav"
+            synthesize_narration(
+                "Voice Match complete. Your personalized voice model is calibrated and ready to produce educational videos.",
+                audition_wav,
+                voice_profile=temp_profile,
+            )
+            audition_path = audition_wav
+        except Exception as e:
+            logger.warning(f"Audition synthesis skipped: {e}")
+
+    # 4. Save Persistent Profile JSON
+    profile = VoiceProfile(
+        profile_name=profile_name,
+        reference_audio=str(master_ref.resolve()),
+        duration_seconds=acoustics["duration_seconds"],
+        f0_mean_hz=acoustics["f0_mean_hz"],
+        f0_median_hz=acoustics["f0_median_hz"],
+        f0_std_hz=acoustics["f0_std_hz"],
+        vocal_register=acoustics["vocal_register"],
+        base_voice=acoustics["base_voice"],
+        base_f0_hz=acoustics["base_f0_hz"],
+        pitch_ratio=acoustics["pitch_ratio"],
+        pitch_semitones=acoustics["pitch_semitones"],
+        eq_gains=acoustics["eq_gains"],
+        speech_rms=acoustics["speech_rms"],
+        takes=[str(p.resolve()) for p in take_paths],
+        audition_audio=str(audition_path.resolve()) if audition_path else None,
+        is_valid=True,
+    )
+
+    profile_json = profile_dir / "profile.json"
+    with open(profile_json, "w", encoding="utf-8") as f:
+        f.write(profile.model_dump_json(indent=2))
+
+    # 5. Print Confirmation Card
+    print("\n" + "=" * 70)
+    print(" 🎉 VOICE MATCH CALIBRATION COMPLETE!")
+    print("=" * 70)
+    print(f" Profile Name:      '{profile.profile_name}'")
+    print(f" Calibration Audio: {profile.duration_seconds:.1f}s total across {len(take_paths)} takes")
+    print(f" Detected Pitch:    {profile.f0_median_hz:.1f} Hz (Register: {profile.vocal_register})")
+    print(f" Base Model Match:  {profile.base_voice} (Pitch Shift: {profile.pitch_ratio:.2f}x, {profile.pitch_semitones:+.1f} st)")
+    print(f" Formant Offsets:   Sub:{profile.eq_gains.get('sub_bass',0):+.1f}dB | "
+          f"Mid:{profile.eq_gains.get('mid',0):+.1f}dB | "
+          f"Pres:{profile.eq_gains.get('presence',0):+.1f}dB")
+    print(f" Master Reference:  {profile.reference_audio}")
+    if profile.audition_audio:
+        print(f" Audition Audio:    {profile.audition_audio}")
+    print("=" * 70)
+    print(f" To create videos using your cloned voice, run:")
+    print(f"   ./scripts/run_production.sh --topic \"...\" --voice-profile {profile.profile_name}")
+    print("=" * 70)
+
+    # 6. Interactive Audition Playback
+    if interactive and audition_path and audition_path.exists():
+        try:
+            choice = input("\nWould you like to listen to your voice model audition sample? [Y/n]: ").strip().lower()
+            if choice in ["", "y", "yes"]:
+                print("[*] 🔊 Playing audition sample...")
+                play_audio_clip(audition_path)
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+    return profile

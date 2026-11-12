@@ -26,15 +26,18 @@ Common triggers:
 - **Visuals:** 1080p programmatic animations, glowing network diagrams, data packet simulations, syntax-highlighted code editors, and metric dashboards rendered via Pillow + FFmpeg hardware acceleration (`h264_nvenc`).
 - **Subtitles & Music:** Subtitles burning and background music are disabled by default for clean presentation; enabled on demand via `--burn-subtitles` and `--include-music`.
 
-## Voice Recording & Cloning Workflow
+## Voice Recording & Google Assistant-Style Voice Match
 
-You can record your own voice and use your cloned vocal timbre for narration:
+You can calibrate and save your voice model just like setting up Google Assistant:
 
 ```bash
-# 1. Record voice from microphone (8 seconds calibration passage)
+# 1. Launch the 4-phase Voice Match Calibration Wizard (Google Assistant Style)
+./scripts/voice_setup.sh my_voice
+
+# Or single-pass recording (8 seconds)
 ./scripts/record_voice.sh my_voice 8
 
-# 2. List enrolled voice profiles
+# 2. List enrolled voice profiles and acoustic metrics
 python scripts/studio.py --list-voices
 
 # 3. Produce video using your cloned voice
