@@ -64,9 +64,28 @@ def main():
         help="Directory to save final MP4, storyboard, subtitles, and narration.",
     )
     parser.add_argument(
+        "--burn-subtitles",
+        action="store_true",
+        default=False,
+        help="Burn styled subtitle text into final MP4 (default: False).",
+    )
+    parser.add_argument(
         "--no-subtitles",
         action="store_true",
-        help="Disable burned subtitles on exported video.",
+        default=False,
+        help="Do not burn subtitles on exported video (default behavior).",
+    )
+    parser.add_argument(
+        "--include-music",
+        action="store_true",
+        default=False,
+        help="Include background music in audio mix (default: False).",
+    )
+    parser.add_argument(
+        "--include-sfx",
+        action="store_true",
+        default=False,
+        help="Include contextual sound effects in audio mix (default: False).",
     )
 
     args = parser.parse_args()
@@ -102,12 +121,16 @@ def main():
     print(f"[*] Duration: {args.duration:.1f}s")
     print(f"[*] Output:   {output_dir}")
 
+    burn_subs = args.burn_subtitles and not args.no_subtitles
+
     mp4_path, storyboard, qc = produce_video(
         source_input=source,
         output_dir=output_dir,
         mode=args.mode,
         target_duration=args.duration,
-        burn_subtitles=not args.no_subtitles,
+        burn_subtitles=burn_subs,
+        include_music=args.include_music,
+        include_sfx=args.include_sfx,
     )
 
     print("\n" + "=" * 60)

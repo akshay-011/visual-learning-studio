@@ -34,7 +34,9 @@ def produce_video(
     mode: str = "technical",
     target_duration: float = 60.0,
     assets_dir: Optional[Path] = None,
-    burn_subtitles: bool = True,
+    burn_subtitles: bool = False,
+    include_music: bool = False,
+    include_sfx: bool = False,
 ) -> Tuple[Path, Storyboard, QualityCheckResult]:
     """Autonomous End-to-End Video Production Engine."""
     start_time = time.time()
@@ -77,10 +79,10 @@ def produce_video(
 
     for idx, scene in enumerate(storyboard.scenes):
         wav_path = work_dir / f"dialogue_{scene.scene_id}.wav"
-        voice = scene.audio_spec.narration_voice or "en-US-ChristopherNeural"
+        voice = scene.audio_spec.narration_voice or "en-US-AndrewNeural"
         synth = synthesize_narration(scene.narration, wav_path, voice=voice)
 
-        # Pad duration slightly for natural pauses between scenes (+0.4s)
+        # Pad duration slightly for natural human pauses between scenes (+0.4s)
         pad_pause = 0.4
         actual_dur = round(synth.duration + pad_pause, 2)
         actual_scene_durations.append(actual_dur)
@@ -102,18 +104,19 @@ def produce_video(
 
     total_actual_duration = round(current_timeline_sec, 2)
 
-    # Write master subtitles.srt
+    # Write master subtitles.srt (standalone file)
     srt_path = output_dir / "subtitles.srt"
     with open(srt_path, "w", encoding="utf-8") as f:
         f.write("\n".join(srt_cues))
 
-    # 6. Mix Master Audio Track with Ducking & SFX
-    music_file = assets_dir / "music" / storyboard.scenes[0].audio_spec.music_track
-    if not music_file.exists():
-        # Fallback to any available track in assets/music
-        available_tracks = list((assets_dir / "music").glob("*.mp3"))
-        if available_tracks:
-            music_file = available_tracks[0]
+    # 6. Mix Master Audio Track with VoiceStudio leveling
+    music_file = None
+    if include_music:
+        music_file = assets_dir / "music" / storyboard.scenes[0].audio_spec.music_track
+        if not music_file.exists():
+            available_tracks = list((assets_dir / "music").glob("*.mp3"))
+            if available_tracks:
+                music_file = available_tracks[0]
 
     master_audio_wav = work_dir / "master_soundtrack.wav"
     build_mixed_soundtrack(
@@ -122,6 +125,8 @@ def produce_video(
         music_track_path=music_file,
         output_wav=master_audio_wav,
         assets_dir=assets_dir,
+        include_music=include_music,
+        include_sfx=include_sfx,
     )
 
     # 7. Render Visual Scene Clips

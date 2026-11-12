@@ -8,7 +8,7 @@ from src.storyboard.models import AudioSpec, Scene, Storyboard, VisualSpec
 def build_30s_lesson(report: ResearchReport, mode: str = "technical") -> Storyboard:
     """Constructs a high-impact, focused 30-second educational storyboard."""
     title = report.title
-    voice = "en-US-ChristopherNeural" if mode == "technical" else ("en-US-GuyNeural" if mode == "beginner" else "en-US-AriaNeural")
+    voice = "en-US-AndrewNeural" if mode == "technical" else ("en-US-BrianNeural" if mode == "beginner" else "en-US-AvaNeural")
 
     # Nodes for architecture diagram in 1920x1080 coordinate space
     nodes_30s = [
@@ -117,7 +117,7 @@ def build_30s_lesson(report: ResearchReport, mode: str = "technical") -> Storybo
 def build_60s_lesson(report: ResearchReport, mode: str = "technical") -> Storyboard:
     """Constructs a comprehensive, multi-scene 60-second educational storyboard."""
     title = report.title
-    voice = "en-US-ChristopherNeural" if mode == "technical" else ("en-US-GuyNeural" if mode == "beginner" else "en-US-AriaNeural")
+    voice = "en-US-AndrewNeural" if mode == "technical" else ("en-US-BrianNeural" if mode == "beginner" else "en-US-AvaNeural")
 
     # Complete 5-tier architecture nodes for 60s
     nodes_60s = [

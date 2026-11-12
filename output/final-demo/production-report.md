@@ -22,13 +22,14 @@ Autonomous Production Verification for Challenge Deliverables:
 | :--- | :--- | :--- |
 | **Output File** | [`30-second/final-video.mp4`](file:///home/akshay/workspace/make-video/output/final-demo/30-second/final-video.mp4) | [`60-second/final-video.mp4`](file:///home/akshay/workspace/make-video/output/final-demo/60-second/final-video.mp4) |
 | **Target Duration** | 30.00 seconds | 60.00 seconds |
-| **Actual Duration** | 25.62 seconds (speech-paced) | 47.78 seconds (speech-paced) |
+| **Actual Duration** | 27.20 seconds (speech-paced) | 47.80 seconds (speech-paced) |
 | **Resolution** | 1920 x 1080 (16:9 Full HD) | 1920 x 1080 (16:9 Full HD) |
 | **Frame Rate** | 30.00 fps constant | 30.00 fps constant |
 | **Video Codec** | H.264 (High Profile, YUV420p) | H.264 (High Profile, YUV420p) |
-| **Audio Codec** | AAC stereo, 48,000 Hz, 196 kbps | AAC stereo, 48,000 Hz, 195 kbps |
-| **File Size** | 1.57 MB (1,648,363 bytes) | 3.00 MB (3,142,164 bytes) |
-| **Production Time** | 57.2 seconds | 72.2 seconds |
+| **Audio Codec** | AAC stereo, 48,000 Hz, 192 kbps | AAC stereo, 48,000 Hz, 192 kbps |
+| **File Size** | 1.43 MB (1,498,908 bytes) | 2.31 MB (2,418,749 bytes) |
+| **Burned Captions** | None (Clean frame visuals) | None (Clean frame visuals) |
+| **Background Music** | Excluded (Pure vocal dialogue) | Excluded (Pure vocal dialogue) |
 | **Quality Gate** | **PASSED (All 6 criteria)** | **PASSED (All 6 criteria)** |
 
 ---
@@ -40,14 +41,22 @@ Every layer of the production stack was executed 100% locally on host hardware w
 1. **AI Cognition & Research:**
    - **Engine:** Ollama v0.40.7 (`http://127.0.0.1:11434`) running `qwen2.5-coder:7b` with deterministic AST fallback.
    - **Cost:** $0.00 (Open-weight weights running on local memory).
-2. **Speech Synthesis (Narration):**
-   - **Voice:** `en-US-ChristopherNeural` (Professional documentary baritone).
-   - **Subtitle Sync:** Exact millisecond-level word and sentence boundary extraction via `edge-tts` streaming with exponential backoff retry.
-   - **Cost:** $0.00 (Zero-cost free service tier).
-3. **Audio Engineering & Sound Design:**
-   - **Background Music:** Sascha Ende (`ende.app`), "Happy Beats / Business Moves" (Vol 1 & Vol 10), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-   - **Sound Effects (SFX):** Kenney Sound Effects Pack (Impact Soft, UI Clicks, Keyboard actuation), licensed under [CC0 (Public Domain)](https://creativecommons.org/publicdomain/zero/1.0/).
-   - **Mixing Chain:** FFmpeg multi-track audio pipeline with automatic sidechain ducking (-24 dB during narration), 1.5s fade-in, 2.5s fade-out, and -16 LUFS loudness normalization.
+2. **Speech Synthesis & VoiceStudio Human Engineering:**
+   - **Source:** Architectural patterns from `https://github.com/debpalash/voicestudio`.
+   - **Voice Model:** `en-US-AndrewNeural` (natural conversational inflection and human breath cadence).
+   - **Pronunciation Lexicon:** Exact whole-word boundary substitution preventing robotic acronym spelling (`API` -> `A P I`, `TLS` -> `T L S`, `JWT` -> `JOT`, `SQL` -> `sequel`, `HTTP` -> `H T T P`, `DNS` -> `D N S`, `gRPC` -> `G R P C`, `Redis` -> `Red-iss`).
+   - **Prosody & Cadence:** SSML-lite parser expanding pause markers into natural conversational pauses.
+   - **Vocal Studio Mastering Chain:**
+     - 80 Hz high-pass filter (cuts mechanical sub-bass rumble).
+     - 250 Hz warmth peaking equalizer (+1.5 dB).
+     - 6,000 Hz sibilance de-esser (-1.5 dB).
+     - Dynamic broadcast compressor (`acompressor`).
+     - EBU R128 loudness normalization (`loudnorm=I=-16:TP=-1.5:LRA=9`).
+   - **Cost:** $0.00.
+3. **Audio Configuration:**
+   - **Background Music:** Disabled by default (`include_music=False`) per production spec.
+   - **Sound Effects:** Disabled by default (`include_sfx=False`).
+   - **Dialogue Isolation:** 100% clean, unclouded vocal track.
    - **Cost:** $0.00.
 4. **Visual Production & Graphic Engine:**
    - **Animation Engine:** Python 3.12 + Pillow + NumPy procedural 1080p rendering.
@@ -58,10 +67,10 @@ Every layer of the production stack was executed 100% locally on host hardware w
      - *Code Walkthrough:* Dark-mode IDE frame with traffic light controls, filename tabs, line numbers, and line-level spotlighting.
      - *Metric Dashboard:* 4-card KPI grid with glowing numeric values and animated card highlight cycles.
    - **Typography:** Liberation Sans & Liberation Mono (`/usr/share/fonts/liberation/`).
+   - **Captions:** Clean visual presentation without burned subtitle overlays (`burn_subtitles=False`).
    - **Cost:** $0.00.
 5. **Video Encoding & Composition:**
    - **Hardware Encoder:** NVIDIA NVENC (`h264_nvenc`, preset `p4`, CQ 19) via NVIDIA GeForce RTX 3050 Laptop GPU (6 GB VRAM).
-   - **Subtitle Burning:** FFmpeg `subtitles` filter with custom font styling, outline borders, and bottom-centered margin.
    - **Cost:** $0.00.
 
 ---
@@ -74,7 +83,7 @@ Probed by `src/discovery/hardware.py`:
 - **System Memory:** 15.3 GiB RAM + 30 GiB swap (Peak RAM utilization: ~1.8 GiB)
 - **GPU:** NVIDIA GeForce RTX 3050 Laptop GPU (6144 MiB VRAM)
 - **Assigned Profile:** **BALANCED** (Selected automatically)
-- **Disk Utilization:** ~5 MB for final outputs, ~15 MB temporary cache during composition.
+- **Disk Utilization:** ~3.8 MB for final outputs, ~15 MB temporary cache during composition.
 
 ---
 
@@ -86,7 +95,7 @@ Both exported videos passed all verification checks in `src/quality/inspector.py
 {
   "30-second": {
     "is_valid": true,
-    "duration_seconds": 25.62,
+    "duration_seconds": 27.20,
     "video_codec": "h264",
     "resolution": "1920x1080",
     "fps": 30.0,
@@ -104,7 +113,7 @@ Both exported videos passed all verification checks in `src/quality/inspector.py
   },
   "60-second": {
     "is_valid": true,
-    "duration_seconds": 47.78,
+    "duration_seconds": 47.80,
     "video_codec": "h264",
     "resolution": "1920x1080",
     "fps": 30.0,

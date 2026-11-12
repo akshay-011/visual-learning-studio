@@ -26,7 +26,7 @@
         "theme": "dark_cyan"
       },
       "audio_spec": {
-        "narration_voice": "en-US-ChristopherNeural",
+        "narration_voice": "en-US-AndrewNeural",
         "speech_rate": "+0%",
         "sfx_cue": "impactSoft_medium_001.ogg",
         "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
@@ -89,7 +89,7 @@
         "theme": "cyber_dark"
       },
       "audio_spec": {
-        "narration_voice": "en-US-ChristopherNeural",
+        "narration_voice": "en-US-AndrewNeural",
         "speech_rate": "+0%",
         "sfx_cue": "impactSoft_medium_004.ogg",
         "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
@@ -220,7 +220,7 @@
         "theme": "cyber_dark"
       },
       "audio_spec": {
-        "narration_voice": "en-US-ChristopherNeural",
+        "narration_voice": "en-US-AndrewNeural",
         "speech_rate": "+0%",
         "sfx_cue": "impactSoft_medium_003.ogg",
         "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
@@ -256,7 +256,7 @@
         "theme": "cyber_dark"
       },
       "audio_spec": {
-        "narration_voice": "en-US-ChristopherNeural",
+        "narration_voice": "en-US-AndrewNeural",
         "speech_rate": "+0%",
         "sfx_cue": "keyboard/keypress-001.wav",
         "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",
@@ -304,7 +304,7 @@
         "theme": "dark_cyan"
       },
       "audio_spec": {
-        "narration_voice": "en-US-ChristopherNeural",
+        "narration_voice": "en-US-AndrewNeural",
         "speech_rate": "+0%",
         "sfx_cue": "impactSoft_medium_002.ogg",
         "music_track": "happy-beats-business-moves-vol-1-by-ende-dot-app.mp3",

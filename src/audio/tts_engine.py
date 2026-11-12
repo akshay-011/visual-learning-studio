@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Optional
 import edge_tts
 
+from src.audio.voicestudio import process_human_cadence, get_vocal_studio_filter
+
 
 @dataclass
 class SynthesizedAudio:
@@ -35,10 +37,13 @@ async def _synthesize_edge_tts(
     text: str,
     voice: str,
     output_wav: Path,
-    rate: str = "+0%",
+    rate: str = "-3%",
     max_retries: int = 4,
 ) -> SynthesizedAudio:
-    """Internal coroutine for edge-tts streaming and conversion with exponential backoff retries."""
+    """Internal coroutine for edge-tts streaming with VoiceStudio cadence and mastering."""
+    # Pre-process text through VoiceStudio pronunciation lexicon and human prosody
+    human_text = process_human_cadence(text)
+
     temp_mp3 = output_wav.with_suffix(".temp.mp3")
     output_wav.parent.mkdir(parents=True, exist_ok=True)
 
@@ -47,7 +52,7 @@ async def _synthesize_edge_tts(
 
     for attempt in range(max_retries):
         try:
-            communicate = edge_tts.Communicate(text, voice, rate=rate)
+            communicate = edge_tts.Communicate(human_text, voice, rate=rate)
             submaker = edge_tts.SubMaker()
 
             with open(temp_mp3, "wb") as f:
@@ -66,9 +71,9 @@ async def _synthesize_edge_tts(
                 temp_mp3.unlink()
             await asyncio.sleep(1.0 * (attempt + 1))
     else:
-        # If all retries with primary voice fail, try fallback voice en-US-GuyNeural
+        # If all retries with primary voice fail, try fallback voice en-US-BrianNeural
         try:
-            communicate = edge_tts.Communicate(text, "en-US-GuyNeural", rate=rate)
+            communicate = edge_tts.Communicate(human_text, "en-US-BrianNeural", rate=rate)
             submaker = edge_tts.SubMaker()
             with open(temp_mp3, "wb") as f:
                 async for chunk in communicate.stream():
@@ -79,11 +84,12 @@ async def _synthesize_edge_tts(
         except Exception as e:
             raise RuntimeError(f"Edge-TTS synthesis failed after retries: {last_err or e}")
 
-    # Transcode to broadcast standard PCM 16-bit 48,000 Hz Stereo WAV
+    # Transcode to broadcast standard PCM 16-bit 48,000 Hz Stereo WAV with VoiceStudio mastering
     cmd = [
         "ffmpeg",
         "-y",
         "-i", str(temp_mp3),
+        "-af", get_vocal_studio_filter(),
         "-ar", "48000",
         "-ac", "2",
         "-c:a", "pcm_s16le",
@@ -107,8 +113,8 @@ async def _synthesize_edge_tts(
 def synthesize_narration(
     text: str,
     output_wav: Path,
-    voice: str = "en-US-ChristopherNeural",
-    rate: str = "+0%",
+    voice: str = "en-US-AndrewNeural",
+    rate: str = "-3%",
 ) -> SynthesizedAudio:
     """Synchronous interface for neural voiceover synthesis."""
     return asyncio.run(_synthesize_edge_tts(text, voice, output_wav, rate=rate))

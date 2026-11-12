@@ -22,9 +22,9 @@ Common triggers:
 
 - **No paid API subscriptions:** Never require or call paid APIs (OpenAI, Anthropic, ElevenLabs, Runway, Midjourney, Replicate, MuAPI).
 - **Local Inference:** AI cognition uses local Ollama (`qwen2.5-coder:7b` / `gemma4`) or built-in deterministic heuristic fallback.
-- **Voiceover:** Powered by zero-cost neural TTS (`edge-tts` or offline `piper`).
+- **Voiceover:** Powered by zero-cost neural TTS with VoiceStudio human conversational prosody, technical acronym pronunciation dictionary, and 5-stage broadcast vocal mastering chain (`en-US-AndrewNeural`).
 - **Visuals:** 1080p programmatic animations, glowing network diagrams, data packet simulations, syntax-highlighted code editors, and metric dashboards rendered via Pillow + FFmpeg hardware acceleration (`h264_nvenc`).
-- **Audio Assets:** Pre-bundled CC BY 4.0 music and CC0 sound effects.
+- **Subtitles & Music:** Subtitles burning and background music are disabled by default for clean presentation; enabled on demand via `--burn-subtitles` and `--include-music`.
 
 ## Production Execution Workflow
 

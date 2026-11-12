@@ -1,19 +1,19 @@
 1
-00:00:00,050 --> 00:00:06,480
+00:00:00,050 --> 00:00:06,647
 Every time you tap 'Buy Now', an invisible journey begins across modern distributed infrastructure.
 
 2
-00:00:06,929 --> 00:00:18,783
+00:00:07,099 --> 00:00:18,161
 Your request connects to the API Gateway. Here, TLS encryption terminates, JWT security tokens are verified, and rate limits are strictly enforced.
 
 3
-00:00:19,230 --> 00:00:29,716
+00:00:18,609 --> 00:00:29,479
 Inside the private cluster, the request routes to the Order Service. It queries an in-memory Redis cache before reaching database indexes in microseconds.
 
 4
-00:00:30,169 --> 00:00:39,575
+00:00:29,929 --> 00:00:39,408
 Here in the backend controller, asynchronous workers process business validation, commit database transactions, and dispatch confirmation events.
 
 5
-00:00:40,029 --> 00:00:47,779
+00:00:39,859 --> 00:00:47,801
 In under fifty milliseconds, the response returns—a testament to the precision of modern distributed software engineering.
