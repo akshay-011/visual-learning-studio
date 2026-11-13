@@ -91,25 +91,41 @@ async def _synthesize_edge_tts(
         except Exception as e:
             raise RuntimeError(f"Edge-TTS synthesis failed after retries: {last_err or e}")
 
-    # Determine audio filter: use VoiceProfile rubberband+formant filter if available, else studio mastering
+    # Voice transformation: use WORLD vocoder spectral morphing when voice profile is provided
     if voice_profile is not None:
-        from src.audio.cloner import get_voice_clone_filter
-        audio_filter = get_voice_clone_filter(voice_profile)
-    else:
-        audio_filter = get_vocal_studio_filter()
+        from src.audio.cloner import morph_voice_world
 
-    # Transcode to broadcast standard PCM 16-bit 48,000 Hz Stereo WAV with VoiceStudio mastering
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", str(temp_mp3),
-        "-af", audio_filter,
-        "-ar", "48000",
-        "-ac", "2",
-        "-c:a", "pcm_s16le",
-        str(output_wav),
-    ]
-    subprocess.run(cmd, capture_output=True, check=True)
+        raw_tts_wav = output_wav.with_suffix(".raw_tts.wav")
+        cmd_decode = [
+            "ffmpeg",
+            "-y",
+            "-i", str(temp_mp3),
+            "-ar", "48000",
+            "-ac", "1",
+            "-c:a", "pcm_s16le",
+            str(raw_tts_wav),
+        ]
+        subprocess.run(cmd_decode, capture_output=True, check=True)
+
+        try:
+            morph_voice_world(raw_tts_wav, voice_profile, output_wav)
+        finally:
+            if raw_tts_wav.exists():
+                raw_tts_wav.unlink()
+    else:
+        # Standard VoiceStudio mastering (highpass, EQ, compression, EBU R128 loudness)
+        audio_filter = get_vocal_studio_filter()
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", str(temp_mp3),
+            "-af", audio_filter,
+            "-ar", "48000",
+            "-ac", "2",
+            "-c:a", "pcm_s16le",
+            str(output_wav),
+        ]
+        subprocess.run(cmd, capture_output=True, check=True)
 
     if temp_mp3.exists():
         temp_mp3.unlink()

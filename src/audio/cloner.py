@@ -92,6 +92,8 @@ class VoiceProfile(BaseModel):
     f0_mean_hz: float
     f0_median_hz: float
     f0_std_hz: float
+    f0_log_mean: float = 4.80
+    f0_log_std: float = 0.25
     vocal_register: str
     base_voice: str
     base_f0_hz: float
@@ -99,6 +101,8 @@ class VoiceProfile(BaseModel):
     pitch_semitones: float
     eq_gains: Dict[str, float]
     speech_rms: float
+    formants: List[float] = Field(default_factory=list)
+    spectral_signature_path: Optional[str] = None
     takes: List[str] = Field(default_factory=list)
     audition_audio: Optional[str] = None
     is_valid: bool = True
@@ -313,12 +317,87 @@ def analyze_voice_acoustics(wav_path: Path) -> Dict[str, Any]:
     }
 
 
+def extract_world_acoustic_profile(wav_path: Path) -> Dict[str, Any]:
+    """Extracts continuous log-F0 statistics, vocal tract spectral envelope, and formants using WORLD vocoder."""
+    import soundfile as sf
+    import pyworld as pw
+    import scipy.signal
+    import scipy.linalg
+
+    x, fs = sf.read(str(wav_path))
+    if x.ndim > 1:
+        x = x.mean(axis=1)
+    x = x.astype(np.float64)
+
+    # 1. Pitch & Formant Analysis using WORLD vocoder
+    _f0, t_f0 = pw.dio(x, fs)
+    f0 = pw.stonemask(x, _f0, t_f0, fs)
+    sp = pw.cheaptrick(x, f0, t_f0, fs)
+    ap = pw.d4c(x, f0, t_f0, fs)
+
+    voiced = f0 > 40.0
+    if np.any(voiced):
+        f0_voiced = f0[voiced]
+        f0_mean = float(np.mean(f0_voiced))
+        f0_median = float(np.median(f0_voiced))
+        f0_std = float(np.std(f0_voiced))
+        f0_log_mean = float(np.mean(np.log(f0_voiced)))
+        f0_log_std = float(np.std(np.log(f0_voiced)))
+        mean_sp = np.mean(sp[voiced], axis=0)
+        mean_ap = np.mean(ap[voiced], axis=0)
+    else:
+        f0_mean = 130.0
+        f0_median = 130.0
+        f0_std = 25.0
+        f0_log_mean = float(np.log(130.0))
+        f0_log_std = 0.20
+        mean_sp = np.mean(sp, axis=0) if len(sp) > 0 else np.ones(1025)
+        mean_ap = np.mean(ap, axis=0) if len(ap) > 0 else np.ones(1025) * 0.5
+
+    # 2. Extract 4 Primary Formants via 18th-order LPC analysis
+    formants = []
+    try:
+        order = 18
+        win_size = min(len(x), int(fs * 0.04))
+        center = len(x) // 2
+        seg = x[max(0, center - win_size // 2) : min(len(x), center + win_size // 2)]
+        if len(seg) > order:
+            w_seg = seg * np.hamming(len(seg))
+            r = np.correlate(w_seg, w_seg, mode="full")
+            r = r[len(r) // 2 : len(r) // 2 + order + 1]
+            if r[0] > 1e-6:
+                a = scipy.linalg.solve_toeplitz((r[:-1], r[:-1]), r[1:])
+                lpc_poly = np.concatenate(([1.0], -a))
+                roots = np.roots(lpc_poly)
+                valid_roots = [
+                    rt for rt in roots if np.imag(rt) > 0.01 and 0.70 < np.abs(rt) < 1.05
+                ]
+                extracted = sorted([np.angle(rt) * (fs / (2.0 * np.pi)) for rt in valid_roots])
+                formants = [round(float(f), 1) for f in extracted if 250.0 <= f <= 4500.0][:4]
+    except Exception as e:
+        logger.warning(f"LPC formant extraction error: {e}")
+
+    if not formants:
+        formants = [650.0, 1200.0, 2500.0, 3600.0]
+
+    return {
+        "f0_mean_hz": round(f0_mean, 1),
+        "f0_median_hz": round(f0_median, 1),
+        "f0_std_hz": round(f0_std, 1),
+        "f0_log_mean": round(f0_log_mean, 4),
+        "f0_log_std": round(f0_log_std, 4),
+        "formants": formants,
+        "mean_sp": mean_sp,
+        "mean_ap": mean_ap,
+    }
+
+
 def enroll_voice(
     reference_path: Path,
     profile_name: str = "my_voice",
     voices_dir: Optional[Path] = None,
 ) -> VoiceProfile:
-    """Enrolls an audio reference into a persistent VoiceProfile."""
+    """Enrolls an audio reference into a persistent VoiceProfile with WORLD vocoder signatures."""
     if not reference_path.exists():
         raise FileNotFoundError(f"Reference voice audio not found: {reference_path}")
 
@@ -332,6 +411,14 @@ def enroll_voice(
     clean_voice_sample(reference_path, dest_ref)
 
     acoustics = analyze_voice_acoustics(dest_ref)
+    world_data = extract_world_acoustic_profile(dest_ref)
+
+    sig_file = profile_dir / "spectral_signature.npz"
+    np.savez_compressed(
+        str(sig_file),
+        mean_sp=world_data["mean_sp"],
+        mean_ap=world_data["mean_ap"],
+    )
 
     profile = VoiceProfile(
         profile_name=profile_name,
@@ -340,6 +427,10 @@ def enroll_voice(
         f0_mean_hz=acoustics["f0_mean_hz"],
         f0_median_hz=acoustics["f0_median_hz"],
         f0_std_hz=acoustics["f0_std_hz"],
+        f0_log_mean=world_data["f0_log_mean"],
+        f0_log_std=world_data["f0_log_std"],
+        formants=world_data["formants"],
+        spectral_signature_path=str(sig_file.resolve()),
         vocal_register=acoustics["vocal_register"],
         base_voice=acoustics["base_voice"],
         base_f0_hz=acoustics["base_f0_hz"],
@@ -426,6 +517,179 @@ def get_voice_clone_filter(profile: VoiceProfile) -> str:
         get_vocal_studio_filter(),
     ]
     return ",".join(filters)
+
+
+def morph_voice_world(
+    base_wav: Path,
+    target_profile: VoiceProfile,
+    output_wav: Path,
+) -> Path:
+    """Acoustically morphs base TTS audio to target voice profile using WORLD vocoder.
+
+    Pipeline:
+    1. Continuous Log-F0 Dynamic Gaussian Mapping (transfers pitch register + intonation dynamics)
+    2. 1025-Bin Smoothed Vocal Tract Spectral Envelope Transfer
+    3. Aperiodicity (breathiness/roughness) spectral blending
+    4. WORLD vocoder resynthesis
+    5. Broadcast vocal mastering (highpass, de-esser, transparent compression, loudness normalization)
+    """
+    output_wav.parent.mkdir(parents=True, exist_ok=True)
+    temp_synth = output_wav.with_suffix(".world_synth.wav")
+
+    try:
+        import soundfile as sf
+        import pyworld as pw
+
+        x_base, fs = sf.read(str(base_wav))
+        if x_base.ndim > 1:
+            x_base = x_base.mean(axis=1)
+        x_base = x_base.astype(np.float64)
+
+        if len(x_base) < int(fs * 0.1):
+            logger.warning("Audio too short for WORLD morphing; bypassing")
+            shutil.copyfile(base_wav, output_wav)
+            return output_wav
+
+        # 1. WORLD Decomposition of Base Synthesis
+        _f0, t_f0 = pw.dio(x_base, fs)
+        f0_base = pw.stonemask(x_base, _f0, t_f0, fs)
+        sp_base = pw.cheaptrick(x_base, f0_base, t_f0, fs)
+        ap_base = pw.d4c(x_base, f0_base, t_f0, fs)
+
+        # 2. Continuous Log-F0 Dynamic Gaussian Mapping
+        voiced = f0_base > 40.0
+        f0_morph = np.zeros_like(f0_base)
+
+        if np.any(voiced):
+            log_f0_base = np.log(f0_base[voiced])
+            mu_base = float(np.mean(log_f0_base))
+            std_base = max(float(np.std(log_f0_base)), 0.05)
+
+            mu_target = (
+                float(target_profile.f0_log_mean)
+                if target_profile.f0_log_mean
+                else math.log(max(target_profile.f0_median_hz, 60.0))
+            )
+            std_target = (
+                float(target_profile.f0_log_std)
+                if target_profile.f0_log_std
+                else 0.20
+            )
+            std_target = max(std_target, 0.05)
+
+            # Expressive variance scaling clamped to avoid robotic flatness or hyper-inflection
+            scale = float(np.clip(std_target / std_base, 0.60, 1.40))
+            log_f0_morph = mu_target + scale * (log_f0_base - mu_base)
+            f0_morph[voiced] = np.clip(np.exp(log_f0_morph), 50.0, 480.0)
+        else:
+            f0_morph = np.copy(f0_base)
+
+        # 3. 1025-Bin Smoothed Vocal Tract Spectral Envelope Transfer
+        mean_sp_target = None
+        mean_ap_target = None
+
+        sig_path = getattr(target_profile, "spectral_signature_path", None)
+        if sig_path and Path(sig_path).exists():
+            try:
+                sig_data = np.load(sig_path)
+                mean_sp_target = sig_data["mean_sp"]
+                if "mean_ap" in sig_data:
+                    mean_ap_target = sig_data["mean_ap"]
+            except Exception as e:
+                logger.warning(f"Failed to load spectral signature from {sig_path}: {e}")
+
+        if mean_sp_target is None and target_profile.reference_audio and Path(target_profile.reference_audio).exists():
+            try:
+                ref_profile = extract_world_acoustic_profile(Path(target_profile.reference_audio))
+                mean_sp_target = ref_profile["mean_sp"]
+                mean_ap_target = ref_profile["mean_ap"]
+            except Exception as e:
+                logger.warning(f"Failed to extract profile from reference: {e}")
+
+        sp_morph = np.copy(sp_base)
+        num_bins = sp_base.shape[1]
+
+        if mean_sp_target is not None:
+            if len(mean_sp_target) != num_bins:
+                x_old = np.linspace(0, 1, len(mean_sp_target))
+                x_new = np.linspace(0, 1, num_bins)
+                mean_sp_target = np.interp(x_new, x_old, mean_sp_target)
+
+            if np.any(voiced):
+                mean_sp_base = np.mean(sp_base[voiced], axis=0)
+            else:
+                mean_sp_base = np.mean(sp_base, axis=0)
+
+            eps = 1e-7
+            ratio = (mean_sp_target + eps) / (mean_sp_base + eps)
+
+            # Frequency smoothing filter across 25 frequency bins (~580 Hz)
+            k_size = 25
+            kernel = np.ones(k_size) / float(k_size)
+            ratio_smooth = np.convolve(ratio, kernel, mode="same")
+
+            med_ratio = float(np.median(ratio_smooth))
+            if med_ratio > 0:
+                ratio_smooth = ratio_smooth / med_ratio
+
+            ratio_clamped = np.clip(ratio_smooth, 0.20, 4.00)
+            alpha = 0.85
+            transfer_curve = np.power(ratio_clamped, alpha)
+            sp_morph = sp_base * transfer_curve[np.newaxis, :]
+
+        # 4. Aperiodicity Blending
+        ap_morph = np.copy(ap_base)
+        if mean_ap_target is not None:
+            if len(mean_ap_target) != num_bins:
+                x_old = np.linspace(0, 1, len(mean_ap_target))
+                x_new = np.linspace(0, 1, num_bins)
+                mean_ap_target = np.interp(x_new, x_old, mean_ap_target)
+            beta = 0.25
+            ap_morph = np.clip((1.0 - beta) * ap_base + beta * mean_ap_target[np.newaxis, :], 0.0, 1.0)
+
+        # 5. WORLD Synthesis
+        y_synth = pw.synthesize(f0_morph, sp_morph, ap_morph, fs)
+        max_amp = float(np.max(np.abs(y_synth)))
+        if max_amp > 1e-4:
+            y_synth = (y_synth / max_amp) * 0.92
+
+        sf.write(str(temp_synth), y_synth, fs, subtype="PCM_16")
+
+        # 6. Broadcast Vocal Studio Mastering (Highpass 80Hz, De-esser, Compression, Loudnorm)
+        cmd_master = [
+            "ffmpeg",
+            "-y",
+            "-i", str(temp_synth),
+            "-af", get_vocal_studio_filter(),
+            "-ar", "48000",
+            "-ac", "2",
+            "-c:a", "pcm_s16le",
+            str(output_wav),
+        ]
+        subprocess.run(cmd_master, capture_output=True, check=True)
+
+    except Exception as e:
+        logger.warning(
+            f"WORLD vocoder morphing encountered error ({e}); falling back to DSP filter chain"
+        )
+        filter_str = get_voice_clone_filter(target_profile)
+        cmd_fallback = [
+            "ffmpeg",
+            "-y",
+            "-i", str(base_wav),
+            "-af", filter_str,
+            "-ar", "48000",
+            "-ac", "2",
+            "-c:a", "pcm_s16le",
+            str(output_wav),
+        ]
+        subprocess.run(cmd_fallback, capture_output=True, check=True)
+
+    finally:
+        if temp_synth.exists():
+            temp_synth.unlink()
+
+    return output_wav
 
 
 def fuse_voice_takes(take_wavs: List[Path], output_composite_wav: Path) -> Path:
@@ -560,6 +824,14 @@ def run_voice_match_setup(
 
     # 2. Extract multi-sentence acoustic profile across the entire calibration corpus
     acoustics = analyze_voice_acoustics(master_ref)
+    world_data = extract_world_acoustic_profile(master_ref)
+
+    sig_file = profile_dir / "spectral_signature.npz"
+    np.savez_compressed(
+        str(sig_file),
+        mean_sp=world_data["mean_sp"],
+        mean_ap=world_data["mean_ap"],
+    )
 
     # 3. Synthesize Audition Test Clip with the newly enrolled voice
     audition_path: Optional[Path] = None
@@ -575,6 +847,10 @@ def run_voice_match_setup(
                 f0_mean_hz=acoustics["f0_mean_hz"],
                 f0_median_hz=acoustics["f0_median_hz"],
                 f0_std_hz=acoustics["f0_std_hz"],
+                f0_log_mean=world_data["f0_log_mean"],
+                f0_log_std=world_data["f0_log_std"],
+                formants=world_data["formants"],
+                spectral_signature_path=str(sig_file.resolve()),
                 vocal_register=acoustics["vocal_register"],
                 base_voice=acoustics["base_voice"],
                 base_f0_hz=acoustics["base_f0_hz"],
@@ -604,6 +880,10 @@ def run_voice_match_setup(
         f0_mean_hz=acoustics["f0_mean_hz"],
         f0_median_hz=acoustics["f0_median_hz"],
         f0_std_hz=acoustics["f0_std_hz"],
+        f0_log_mean=world_data["f0_log_mean"],
+        f0_log_std=world_data["f0_log_std"],
+        formants=world_data["formants"],
+        spectral_signature_path=str(sig_file.resolve()),
         vocal_register=acoustics["vocal_register"],
         base_voice=acoustics["base_voice"],
         base_f0_hz=acoustics["base_f0_hz"],
@@ -626,11 +906,10 @@ def run_voice_match_setup(
     print("=" * 70)
     print(f" Profile Name:      '{profile.profile_name}'")
     print(f" Calibration Audio: {profile.duration_seconds:.1f}s total across {len(take_paths)} takes")
-    print(f" Detected Pitch:    {profile.f0_median_hz:.1f} Hz (Register: {profile.vocal_register})")
+    print(f" Detected Pitch:    {profile.f0_median_hz:.1f} Hz (Log F0: {profile.f0_log_mean:.2f} ± {profile.f0_log_std:.2f})")
+    print(f" Extracted Formants:{', '.join(f'{f:.0f}Hz' for f in profile.formants) if profile.formants else 'Standard'}")
     print(f" Base Model Match:  {profile.base_voice} (Pitch Shift: {profile.pitch_ratio:.2f}x, {profile.pitch_semitones:+.1f} st)")
-    print(f" Formant Offsets:   Sub:{profile.eq_gains.get('sub_bass',0):+.1f}dB | "
-          f"Mid:{profile.eq_gains.get('mid',0):+.1f}dB | "
-          f"Pres:{profile.eq_gains.get('presence',0):+.1f}dB")
+    print(f" Spectral Signature:{sig_file.name} (WORLD Vocoder 1025 frequency bins)")
     print(f" Master Reference:  {profile.reference_audio}")
     if profile.audition_audio:
         print(f" Audition Audio:    {profile.audition_audio}")

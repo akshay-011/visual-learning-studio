@@ -38,6 +38,11 @@ temp_renders/
 output/work/
 output/cache/
 output/temp/
+output/api-journey-60s/
+
+# User enrolled voices & audio recordings
+assets/voices/*
+!assets/voices/.gitkeep
 
 # Environment
 .env

@@ -11,9 +11,11 @@ from src.audio.cloner import (
     VoiceProfile,
     analyze_voice_acoustics,
     enroll_voice,
+    extract_world_acoustic_profile,
     get_voice_clone_filter,
     list_voice_profiles,
     load_voice_profile,
+    morph_voice_world,
 )
 from src.audio.tts_engine import synthesize_narration
 
@@ -83,6 +85,8 @@ def test_enroll_and_load_voice_profile(tmp_path: Path):
     loaded = load_voice_profile("test_speaker", voices_dir=voices_dir)
     assert loaded.profile_name == "test_speaker"
     assert loaded.f0_median_hz == profile.f0_median_hz
+    assert (voices_dir / "test_speaker" / "spectral_signature.npz").exists()
+    assert loaded.spectral_signature_path is not None
 
     # Verify listing
     profiles = list_voice_profiles(voices_dir=voices_dir)
@@ -139,3 +143,41 @@ def test_synthesize_with_cloned_voice(tmp_path: Path):
     assert out_wav.exists()
     assert synth.duration > 0.5
     assert synth.wav_path == out_wav
+
+
+def test_extract_world_acoustic_profile(tmp_path: Path):
+    """Verifies that WORLD vocoder extracts continuous Log-F0 and 1025-bin spectral envelope."""
+    wav_path = tmp_path / "voice_sample.wav"
+    _generate_synthetic_voice(wav_path, f0_hz=135.0, duration_sec=1.5)
+
+    profile_data = extract_world_acoustic_profile(wav_path)
+
+    assert 120.0 <= profile_data["f0_median_hz"] <= 150.0
+    assert 4.5 <= profile_data["f0_log_mean"] <= 5.2
+    assert profile_data["f0_log_std"] >= 0.0
+    assert len(profile_data["mean_sp"]) == 1025
+    assert len(profile_data["mean_ap"]) == 1025
+    assert len(profile_data["formants"]) > 0
+
+
+def test_morph_voice_world(tmp_path: Path):
+    """Verifies WORLD vocoder resynthesis, Log-F0 mapping, and vocal tract transfer."""
+    ref_wav = tmp_path / "ref_voice.wav"
+    _generate_synthetic_voice(ref_wav, f0_hz=110.0, duration_sec=2.0)
+    profile = enroll_voice(ref_wav, profile_name="morph_test", voices_dir=tmp_path / "voices")
+
+    base_wav = tmp_path / "base_tts.wav"
+    _generate_synthetic_voice(base_wav, f0_hz=155.0, duration_sec=2.0)
+
+    morphed_wav = tmp_path / "morphed_out.wav"
+    res = morph_voice_world(base_wav, profile, morphed_wav)
+
+    assert res.exists()
+    assert res.stat().st_size > 10000
+
+    # Verify morphed audio has shifted pitch towards target
+    from src.audio.cloner import analyze_voice_acoustics
+    morphed_acoustics = analyze_voice_acoustics(res)
+    # Target was 110 Hz, base was 155 Hz; morphed should be significantly lower than base
+    assert morphed_acoustics["f0_median_hz"] < 140.0
+

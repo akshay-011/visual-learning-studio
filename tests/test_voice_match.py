@@ -84,10 +84,13 @@ def test_run_voice_match_setup_with_custom_takes(tmp_path: Path):
     assert (voices_dir / "assistant_match_test" / "reference.wav").exists()
     assert (voices_dir / "assistant_match_test" / "profile.json").exists()
     assert (voices_dir / "assistant_match_test" / "audition.wav").exists()
+    assert (voices_dir / "assistant_match_test" / "spectral_signature.npz").exists()
+    assert profile.spectral_signature_path is not None
     assert profile.audition_audio is not None
 
     # Load and verify
     loaded = load_voice_profile("assistant_match_test", voices_dir=voices_dir)
     assert loaded.profile_name == "assistant_match_test"
     assert loaded.f0_median_hz == profile.f0_median_hz
+    assert loaded.spectral_signature_path is not None
     assert len(loaded.takes) == 4
