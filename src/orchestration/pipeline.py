@@ -39,6 +39,7 @@ def produce_video(
     include_music: bool = False,
     include_sfx: bool = False,
     voice_profile: Optional[Union[str, Path, VoiceProfile]] = None,
+    default_voice: Optional[str] = None,
 ) -> Tuple[Path, Storyboard, QualityCheckResult]:
     """Autonomous End-to-End Video Production Engine."""
     start_time = time.time()
@@ -97,7 +98,7 @@ def produce_video(
 
     for idx, scene in enumerate(storyboard.scenes):
         wav_path = work_dir / f"dialogue_{scene.scene_id}.wav"
-        voice = scene.audio_spec.narration_voice or "en-US-AndrewNeural"
+        voice = default_voice or scene.audio_spec.narration_voice or "en-US-AndrewNeural"
         synth = synthesize_narration(
             scene.narration,
             wav_path,

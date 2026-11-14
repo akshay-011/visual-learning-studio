@@ -22,9 +22,35 @@ Common triggers:
 
 - **No paid API subscriptions:** Never require or call paid APIs (OpenAI, Anthropic, ElevenLabs, Runway, Midjourney, Replicate, MuAPI).
 - **Local Inference:** AI cognition uses local Ollama (`qwen2.5-coder:7b` / `gemma4`) or built-in deterministic heuristic fallback.
-- **Voiceover & Voice Cloning:** Powered by zero-cost neural TTS with VoiceStudio human conversational prosody, technical acronym pronunciation dictionary, and 5-stage broadcast vocal mastering chain (`en-US-AndrewNeural`). Supports recording user voice (`--record-voice`) or cloning existing audio samples (`--clone-voice`) using real-time formant-preserving pitch/timbre shifting (`librubberband`).
+- **Voiceover & Neural Voice Cloning:** Powered by zero-cost neural TTS with VoiceStudio human conversational prosody, technical acronym pronunciation dictionary, and 5-stage broadcast vocal mastering chain (`en-US-AndrewNeural`). Supports recording user voice (`./scripts/voice_setup.sh my_voice`) or cloning existing audio samples (`--clone-voice`) using OpenVoice V2 deep neural tone color conversion (normalizing flow + HiFi-GAN decoding) running locally on CUDA GPU.
 - **Visuals:** 1080p programmatic animations, glowing network diagrams, data packet simulations, syntax-highlighted code editors, and metric dashboards rendered via Pillow + FFmpeg hardware acceleration (`h264_nvenc`).
 - **Subtitles & Music:** Subtitles burning and background music are disabled by default for clean presentation; enabled on demand via `--burn-subtitles` and `--include-music`.
+
+## Natural Language Voice Selection in AGY
+
+You can prompt Antigravity / AGY naturally to select voices:
+
+| User Prompt in AGY | Execution Command | Description |
+| :--- | :--- | :--- |
+| **"Create a video about X using my voice"** | `./scripts/run_production.sh --topic "X" --voice-profile my_voice` | Uses enrolled user voice with OpenVoice V2 neural cloning |
+| **"Create a video about X using somebody's voice"** | `./scripts/run_production.sh --topic "X" --voice-profile <name>` | Uses specific enrolled speaker profile |
+| **"Create a video about X using voice from sample.wav"** | `./scripts/run_production.sh --topic "X" --clone-voice sample.wav` | Clones voice from an external audio file |
+| **"Create a video about X using Brian's voice"** | `./scripts/run_production.sh --topic "X" --voice brian` | Built-in conversational Tenor (`en-US-BrianNeural`) |
+| **"Create a video about X using Ava's voice"** | `./scripts/run_production.sh --topic "X" --voice ava` | Built-in expressive Alto (`en-US-AvaNeural`) |
+| **"Create a video about X using Jenny's voice"** | `./scripts/run_production.sh --topic "X" --voice jenny` | Built-in bright Soprano (`en-US-JennyNeural`) |
+| **"Create a video about X using Andrew's voice"** | `./scripts/run_production.sh --topic "X" --voice andrew` | Built-in authoritative Baritone (default) |
+
+## Specialized Subagent Roster in AGY
+
+Antigravity CLI provides 7 specialized production subagents:
+
+1. **`audio-director`**: Directs neural voiceover synthesis, voice cloning selection, sound effect sync, and EBU R128 mastering.
+2. **`teacher`**: Instructional designer structuring progressive scaffolding, mental models, and the 5-second pedagogical hook.
+3. **`researcher`**: Ingests codebases, GitHub repositories, and research papers; extracts core mechanisms and architectures.
+4. **`scriptwriter`**: Drafts spoken dialogue scripts tailored to human speech cadence with strict word-budget timing.
+5. **`storyboard-director`**: Unifies script, visual layout, packet pathways, and timing into machine-validated JSON.
+6. **`visual-director`**: Governs color theory, typography, geometric hierarchy, and easing animations.
+7. **`quality-checker`**: Automated video inspection gate verifying MP4 container validity, codecs, resolutions, and stream sync.
 
 ## Voice Recording & Google Assistant-Style Voice Match
 
@@ -37,7 +63,7 @@ You can calibrate and save your voice model just like setting up Google Assistan
 # Or single-pass recording (8 seconds)
 ./scripts/record_voice.sh my_voice 8
 
-# 2. List enrolled voice profiles and acoustic metrics
+# 2. List enrolled voice profiles, neural engine status, and built-in voices
 python scripts/studio.py --list-voices
 
 # 3. Produce video using your cloned voice
@@ -47,12 +73,6 @@ python scripts/studio.py --list-voices
   --duration 60 \
   --output-dir output/raft-video \
   --voice-profile my_voice
-
-# Alternatively, clone directly from an existing audio file (.wav or .mp3)
-./scripts/run_production.sh \
-  --topic "Distributed Consensus with Raft" \
-  --clone-voice /path/to/my_recording.wav \
-  --output-dir output/raft-video
 ```
 
 ## Production Execution Workflow

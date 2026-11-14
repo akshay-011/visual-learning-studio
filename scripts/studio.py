@@ -115,7 +115,13 @@ def main():
         "--voice-profile",
         type=str,
         default=None,
-        help="Voice profile name to use or save recording under (default: 'my_voice').",
+        help="Voice profile name to use (e.g. 'my_voice', or a custom enrolled profile name).",
+    )
+    parser.add_argument(
+        "--voice",
+        type=str,
+        default=None,
+        help="Built-in neural voice (e.g. 'andrew', 'brian', 'ava', 'jenny', or full name 'en-US-AndrewNeural').",
     )
     parser.add_argument(
         "--clone-voice",
@@ -126,29 +132,55 @@ def main():
     parser.add_argument(
         "--list-voices",
         action="store_true",
-        help="List all enrolled local voice profiles.",
+        help="List all enrolled local voice profiles and built-in neural voices.",
     )
 
     args = parser.parse_args()
 
+    # Built-in Voice Aliases
+    voice_aliases = {
+        "andrew": "en-US-AndrewNeural",
+        "brian": "en-US-BrianNeural",
+        "ava": "en-US-AvaNeural",
+        "jenny": "en-US-JennyNeural",
+        "guy": "en-US-GuyNeural",
+        "aria": "en-US-AriaNeural",
+    }
+    selected_voice = voice_aliases.get(args.voice.lower(), args.voice) if args.voice else None
+
     if args.list_voices:
         profiles = list_voice_profiles()
-        print("=" * 65)
-        print(" ENROLLED VOICE CLONE PROFILES")
-        print("=" * 65)
+        print("=" * 68)
+        print(" 🎙️  VISUAL LEARNING STUDIO — VOICE ROSTER")
+        print("=" * 68)
+        print(" [1] ENROLLED CLONED VOICES (Local Neural Voice Cloning):")
+        print("-" * 68)
         if not profiles:
-            print("No voice profiles enrolled yet.")
-            print("To enroll a voice, run:")
-            print("  ./scripts/studio.py --record-voice --voice-profile my_voice")
+            print("  No cloned voice profiles enrolled yet.")
+            print("  To enroll your voice (Google Assistant style), run:")
+            print("    ./scripts/voice_setup.sh my_voice")
         else:
             for p in profiles:
-                print(f"Profile:     {p.profile_name}")
-                print(f"Pitch (F0):  {p.f0_median_hz} Hz ({p.vocal_register})")
-                print(f"Base Model:  {p.base_voice} (Pitch Shift: {p.pitch_ratio:.2f}x, {p.pitch_semitones:+.1f} st)")
-                print(f"Reference:   {p.reference_audio}")
-                print(f"Enrolled At: {p.created_at}")
-                print("-" * 65)
-        print("=" * 65)
+                neural_status = "Active (OpenVoice V2)" if getattr(p, "speaker_embedding_path", None) else "WORLD Fallback"
+                print(f"  • Profile Name:    '{p.profile_name}'")
+                print(f"    Neural Cloner:   {neural_status}")
+                print(f"    Detected Pitch:  {p.f0_median_hz:.1f} Hz ({p.vocal_register})")
+                print(f"    Base Voice:      {p.base_voice}")
+                print(f"    Usage Command:   --voice-profile {p.profile_name}")
+                print("-" * 68)
+        print("\n [2] BUILT-IN NEURAL VOICES:")
+        print("-" * 68)
+        print("  • andrew:  en-US-AndrewNeural (Warm, authoritative Baritone)")
+        print("  • brian:   en-US-BrianNeural  (Engaging, conversational Tenor)")
+        print("  • ava:     en-US-AvaNeural    (Warm, expressive Alto)")
+        print("  • jenny:   en-US-JennyNeural  (Clear, bright Soprano)")
+        print("=" * 68)
+        print(" Natural Language Prompts in AGY:")
+        print("  - \"Create a video about X using my voice\"       -> --voice-profile my_voice")
+        print("  - \"Create a video about X using <name>'s voice\"  -> --voice-profile <name>")
+        print("  - \"Create a video about X using Brian's voice\"   -> --voice brian")
+        print("  - \"Create a video about X using Ava's voice\"     -> --voice ava")
+        print("=" * 68)
         return
 
     # Handle Google Assistant-style 4-Phase Voice Match Calibration
@@ -262,6 +294,7 @@ def main():
         include_music=args.include_music,
         include_sfx=args.include_sfx,
         voice_profile=voice_prof,
+        default_voice=selected_voice,
     )
 
     print("\n" + "=" * 60)

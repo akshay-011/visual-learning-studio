@@ -30,7 +30,8 @@
 
 - **100% Zero Monetary Cost:** Operates exclusively using open-weight models, local runtimes, open audio assets, and programmatic graphics. Zero subscriptions, zero paid API keys, zero cloud GPU rentals.
 - **Universal Knowledge Ingestion:** Accepts GitHub repository URLs/folders (with AST and file tree analysis), research paper PDFs, documentation URLs, or plain-text technical topics.
-- **Google Assistant-Style Voice Match:** Calibrate and save your own voice model via a 4-phrase interactive setup wizard. The engine extracts your fundamental pitch ($F_0$), matches an optimal base neural voice, and applies real-time formant-preserving pitch and vocal tract resonance shifting (`librubberband` + 5-band parametric EQ).
+- **Google Assistant-Style Voice Match & Neural Voice Cloning:** Calibrate and save your own voice model via a 4-phrase interactive setup wizard. The engine extracts a 256-dimensional speaker latent embedding and applies **OpenVoice V2 deep neural tone color conversion** (normalizing flow + HiFi-GAN neural decoder) running locally on CUDA GPU. Eliminates robotic vocoder buzz and matches your natural vocal tract resonance and speaking timbre.
+- **Natural Language Voice Selection in AGY:** Say *"create a video about X using my voice"* to automatically select your calibrated voice, *"using somebody's voice"* or *"using <name>'s voice"* to select an enrolled profile, or *"using Brian's/Ava's/Andrew's voice"* to pick built-in neural voices.
 - **VoiceStudio Human Prosody & Pronunciation:** Integrates techniques from [debpalash/voicestudio](https://github.com/debpalash/voicestudio), including an automated technical acronym dictionary (`API` &rarr; `A P I`, `SQL` &rarr; `sequel`, `JWT` &rarr; `JOT`, `gRPC` &rarr; `G R P C`), human breathing pauses, and 5-stage studio vocal mastering (80Hz rumble cut, warmth boost, de-esser, compressor, EBU R128 loudnorm).
 - **Clean Visual Presentation:** Exported MP4 frames feature pristine diagrammatic animations without burned-in captions by default. Standalone `.srt` subtitles are generated alongside. Subtitle burning and background music can be toggled on demand.
 - **Three Educational Formats:**
@@ -341,15 +342,24 @@ Installed plugins:
     Components: 1 skill, 7 agents
 ```
 
-### The 7 Autonomous Subagents
+### The 7 Autonomous Subagents in AGY
 When interacting in `agy`, you can delegate specific video production responsibilities to specialized subagents:
-- `@researcher`: Extracts core architectural mechanisms and invariants from codebases or papers.
-- `@teacher`: Designs intuitive mental models and progressive pedagogical scaffolding.
+- `@audio-director`: Directs neural voice synthesis, VoiceStudio prosody, natural language voice selection, and zero-cost OpenVoice V2 voice cloning.
+- `@teacher`: Designs intuitive mental models, non-jargon visual analogies, and progressive pedagogical scaffolding.
+- `@researcher`: Ingests codebases, GitHub repositories, and research papers; extracts core architectural mechanisms.
 - `@scriptwriter`: Drafts spoken conversational dialogue adhering to strict word-budget tempos.
 - `@storyboard-director`: Orchestrates machine-validated JSON storyboards conforming to Pydantic schemas.
 - `@visual-director`: Enforces color theory, geometric layouts, typography, and motion timing.
-- `@audio-director`: Masters voice synthesis, VoiceStudio prosody, and audio leveling.
 - `@quality-checker`: Validates the exported MP4 against the 6 automated inspection gates.
+
+### Voice Selection Directives in AGY
+In AGY, you can request videos with specific voices using plain natural language:
+- *"Create a 60-second video explaining Raft consensus using my voice."* &rarr; Maps to `--voice-profile my_voice`.
+- *"Create an explainer on FastAPI using somebody's voice (profile: alex)."* &rarr; Maps to `--voice-profile alex`.
+- *"Create a video about Docker using Brian's voice."* &rarr; Maps to `--voice brian` (`en-US-BrianNeural`).
+- *"Create a video using Ava's voice."* &rarr; Maps to `--voice ava` (`en-US-AvaNeural`).
+- *"List all available voices."* &rarr; Runs `python scripts/studio.py --list-voices`.
+- *"Set up my voice."* &rarr; Launches Google Assistant-style calibration wizard (`./scripts/voice_setup.sh my_voice`).
 
 ---
 
