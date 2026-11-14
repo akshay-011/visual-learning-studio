@@ -103,6 +103,7 @@ class VoiceProfile(BaseModel):
     speech_rms: float
     formants: List[float] = Field(default_factory=list)
     spectral_signature_path: Optional[str] = None
+    speaker_embedding_path: Optional[str] = None
     takes: List[str] = Field(default_factory=list)
     audition_audio: Optional[str] = None
     is_valid: bool = True
@@ -420,6 +421,17 @@ def enroll_voice(
         mean_ap=world_data["mean_ap"],
     )
 
+    # Extract & cache deep neural speaker embedding
+    speaker_emb_path = None
+    try:
+        from src.audio.neural_cloner import get_neural_converter
+        converter = get_neural_converter()
+        se_file = profile_dir / "speaker_embedding.pt"
+        converter.extract_speaker_embedding(dest_ref, cache_path=se_file)
+        speaker_emb_path = str(se_file.resolve())
+    except Exception as e_neural:
+        logger.warning(f"Neural speaker embedding extraction failed; WORLD fallback preserved: {e_neural}")
+
     profile = VoiceProfile(
         profile_name=profile_name,
         reference_audio=str(dest_ref.resolve()),
@@ -431,6 +443,7 @@ def enroll_voice(
         f0_log_std=world_data["f0_log_std"],
         formants=world_data["formants"],
         spectral_signature_path=str(sig_file.resolve()),
+        speaker_embedding_path=speaker_emb_path,
         vocal_register=acoustics["vocal_register"],
         base_voice=acoustics["base_voice"],
         base_f0_hz=acoustics["base_f0_hz"],
@@ -833,6 +846,17 @@ def run_voice_match_setup(
         mean_ap=world_data["mean_ap"],
     )
 
+    # Extract & cache deep neural speaker embedding
+    speaker_emb_path = None
+    try:
+        from src.audio.neural_cloner import get_neural_converter
+        converter = get_neural_converter()
+        se_file = profile_dir / "speaker_embedding.pt"
+        converter.extract_speaker_embedding(master_ref, cache_path=se_file)
+        speaker_emb_path = str(se_file.resolve())
+    except Exception as e_neural:
+        logger.warning(f"Neural speaker embedding extraction failed; WORLD fallback preserved: {e_neural}")
+
     # 3. Synthesize Audition Test Clip with the newly enrolled voice
     audition_path: Optional[Path] = None
     if synthesize_audition:
@@ -851,6 +875,7 @@ def run_voice_match_setup(
                 f0_log_std=world_data["f0_log_std"],
                 formants=world_data["formants"],
                 spectral_signature_path=str(sig_file.resolve()),
+                speaker_embedding_path=speaker_emb_path,
                 vocal_register=acoustics["vocal_register"],
                 base_voice=acoustics["base_voice"],
                 base_f0_hz=acoustics["base_f0_hz"],
@@ -884,6 +909,7 @@ def run_voice_match_setup(
         f0_log_std=world_data["f0_log_std"],
         formants=world_data["formants"],
         spectral_signature_path=str(sig_file.resolve()),
+        speaker_embedding_path=speaker_emb_path,
         vocal_register=acoustics["vocal_register"],
         base_voice=acoustics["base_voice"],
         base_f0_hz=acoustics["base_f0_hz"],

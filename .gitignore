@@ -44,6 +44,11 @@ output/api-journey-60s/
 assets/voices/*
 !assets/voices/.gitkeep
 
+# Neural model weights (auto-downloaded on first run)
+assets/models/**/*.pth
+assets/models/**/*.pt
+assets/models/**/*.bin
+
 # Environment
 .env
 .env.local

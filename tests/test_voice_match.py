@@ -85,7 +85,9 @@ def test_run_voice_match_setup_with_custom_takes(tmp_path: Path):
     assert (voices_dir / "assistant_match_test" / "profile.json").exists()
     assert (voices_dir / "assistant_match_test" / "audition.wav").exists()
     assert (voices_dir / "assistant_match_test" / "spectral_signature.npz").exists()
+    assert (voices_dir / "assistant_match_test" / "speaker_embedding.pt").exists()
     assert profile.spectral_signature_path is not None
+    assert profile.speaker_embedding_path is not None
     assert profile.audition_audio is not None
 
     # Load and verify

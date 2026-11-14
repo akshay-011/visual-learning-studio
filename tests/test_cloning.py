@@ -181,3 +181,31 @@ def test_morph_voice_world(tmp_path: Path):
     # Target was 110 Hz, base was 155 Hz; morphed should be significantly lower than base
     assert morphed_acoustics["f0_median_hz"] < 140.0
 
+
+def test_neural_tone_color_converter(tmp_path: Path):
+    """Verifies neural speaker embedding extraction and tone color conversion."""
+    from src.audio.neural_cloner import get_neural_converter
+
+    converter = get_neural_converter()
+    assert converter.model is not None
+
+    ref_wav = tmp_path / "ref.wav"
+    _generate_synthetic_voice(ref_wav, f0_hz=130.0, duration_sec=1.5)
+
+    se_path = tmp_path / "speaker_emb.pt"
+    se = converter.extract_speaker_embedding(ref_wav, cache_path=se_path)
+
+    assert se.shape == (1, 256, 1)
+    assert se_path.exists()
+
+    # Convert voice
+    src_wav = tmp_path / "src.wav"
+    _generate_synthetic_voice(src_wav, f0_hz=180.0, duration_sec=1.5)
+
+    out_wav = tmp_path / "neural_converted.wav"
+    res = converter.convert_voice(src_wav, se_path, out_wav)
+
+    assert res.exists()
+    assert res.stat().st_size > 5000
+
+

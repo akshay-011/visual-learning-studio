@@ -91,25 +91,49 @@ async def _synthesize_edge_tts(
         except Exception as e:
             raise RuntimeError(f"Edge-TTS synthesis failed after retries: {last_err or e}")
 
-    # Voice transformation: use WORLD vocoder spectral morphing when voice profile is provided
+    # Voice transformation: Neural Tone Color Conversion (OpenVoice V2) with WORLD fallback
     if voice_profile is not None:
-        from src.audio.cloner import morph_voice_world
-
         raw_tts_wav = output_wav.with_suffix(".raw_tts.wav")
         cmd_decode = [
             "ffmpeg",
             "-y",
             "-i", str(temp_mp3),
-            "-ar", "48000",
+            "-ar", "22050",
             "-ac", "1",
             "-c:a", "pcm_s16le",
             str(raw_tts_wav),
         ]
         subprocess.run(cmd_decode, capture_output=True, check=True)
 
-        try:
-            morph_voice_world(raw_tts_wav, voice_profile, output_wav)
-        finally:
+        converted_success = False
+        # 1. Neural Tone Color Converter (Normalizing Flow + HiFi-GAN)
+        target_se_path = getattr(voice_profile, "speaker_embedding_path", None)
+        if not target_se_path and getattr(voice_profile, "reference_audio", None):
+            target_se_path = voice_profile.reference_audio
+
+        if target_se_path and Path(target_se_path).exists():
+            try:
+                from src.audio.neural_cloner import get_neural_converter
+
+                converter = get_neural_converter()
+                converter.convert_voice(raw_tts_wav, Path(target_se_path), output_wav)
+                converted_success = True
+            except Exception as e_neural:
+                from src.audio.cloner import logger as cloner_logger
+                cloner_logger.warning(
+                    f"Neural voice conversion encountered error ({e_neural}); falling back to WORLD vocoder"
+                )
+
+        # 2. Fallback to WORLD vocoder if neural conversion failed
+        if not converted_success:
+            try:
+                from src.audio.cloner import morph_voice_world
+
+                morph_voice_world(raw_tts_wav, voice_profile, output_wav)
+            finally:
+                if raw_tts_wav.exists():
+                    raw_tts_wav.unlink()
+        else:
             if raw_tts_wav.exists():
                 raw_tts_wav.unlink()
     else:
