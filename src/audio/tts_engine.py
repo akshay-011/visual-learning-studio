@@ -40,7 +40,7 @@ async def _synthesize_edge_tts(
     text: str,
     voice: str,
     output_wav: Path,
-    rate: str = "-3%",
+    rate: str = "-6%",
     max_retries: int = 4,
     voice_profile: Optional["VoiceProfile"] = None,
 ) -> SynthesizedAudio:
@@ -168,7 +168,7 @@ def synthesize_narration(
     text: str,
     output_wav: Path,
     voice: str = "en-US-AndrewNeural",
-    rate: str = "-3%",
+    rate: str = "-6%",
     voice_profile: Optional["VoiceProfile"] = None,
 ) -> SynthesizedAudio:
     """Synchronous interface for neural voiceover synthesis with optional voice cloning."""

@@ -12,17 +12,21 @@ def test_pronunciation_lexicon():
 
 
 def test_process_human_cadence():
-    raw = "Every request connects to the gateway [pause 300ms] for [emphasis]TLS[/emphasis] inspection."
+    raw = "Every request connects to the gateway [pause 300ms] for [emphasis]TLS[/emphasis] inspection because security is critical."
     processed = process_human_cadence(raw)
     assert "..." in processed
     assert "T L S" in processed
     assert "[pause" not in processed
     assert "[emphasis]" not in processed
+    assert ", because" in processed
 
 
 def test_vocal_studio_filter():
     f = get_vocal_studio_filter()
     assert "highpass=f=80" in f
-    assert "equalizer=f=250" in f
+    assert "equalizer=f=180" in f
+    assert "equalizer=f=3200" in f
+    assert "equalizer=f=6800" in f
+    assert "asoftclip=type=tanh" in f
     assert "acompressor" in f
     assert "loudnorm" in f

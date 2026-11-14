@@ -141,7 +141,7 @@ class NeuralToneColorConverter:
         source_wav: Path,
         target_se: Union[torch.Tensor, Path],
         output_wav: Path,
-        tau: float = 0.3,
+        tau: float = 0.32,
     ) -> Path:
         """Transforms source speech tone color to match target speaker embedding.
 

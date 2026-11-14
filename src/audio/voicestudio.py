@@ -45,6 +45,11 @@ DEFAULT_TECHNICAL_LEXICON: Dict[str, str] = {
     "GPU": "G P U",
     "NVMe": "N V M E",
     "SSD": "S S D",
+    "SDK": "S D K",
+    "SDKs": "S D K's",
+    "CI/CD": "C I C D",
+    "POSIX": "paw-zix",
+    "SaaS": "sass",
     "microsecond": "micro-second",
     "microseconds": "micro-seconds",
     "sub-millisecond": "sub millisecond",
@@ -92,6 +97,7 @@ def process_human_cadence(text: str) -> str:
     - [pause Nms] -> natural breath pause (punctuation ellipsis)
     - [slow]...[/slow] -> natural phrasing
     - [emphasis]...[/emphasis] -> natural stress
+    - Inserts respiratory breath pauses at long clause conjunctions to eliminate robotic run-on delivery.
     """
     if not text:
         return ""
@@ -107,7 +113,17 @@ def process_human_cadence(text: str) -> str:
     # 3. Apply technical pronunciation lexicon
     processed = apply_pronunciation_lexicon(processed)
 
-    # 4. Normalize multiple spaces
+    # 4. Human respiratory phrasing: inject micro-cadence pause before conjunctions
+    # in long clauses (>= 4 words) if punctuation is not already present
+    conjunction_pattern = re.compile(
+        r"(\b\w+\b(?:\s+\b\w+\b){3,})\s+(because|although|whereas|meaning that|rather than)\b",
+        re.IGNORECASE,
+    )
+    processed = conjunction_pattern.sub(r"\1, \2", processed)
+
+    # 5. Clean up redundant punctuation and normalize whitespace
+    processed = re.sub(r",\s*,+", ",", processed)
+    processed = re.sub(r"\s+([,.:;?!])", r"\1", processed)
     processed = re.sub(r"\s+", " ", processed).strip()
 
     return processed
@@ -115,16 +131,20 @@ def process_human_cadence(text: str) -> str:
 
 def get_vocal_studio_filter() -> str:
     """VoiceStudio mastering chain:
-    - 80 Hz high-pass (removes low-end mic rumble)
-    - 250 Hz warmth boost (+1.5 dB)
-    - 6000 Hz de-esser (-1.5 dB)
-    - Broadcast dynamic compression (gentle 2.5:1 ratio)
-    - Broadcast loudness normalization (-16 LUFS)
+    - 80 Hz high-pass (removes subsonic rumble and plosives)
+    - 180 Hz proximity warmth (+2.2 dB, chest resonance emulation)
+    - 3200 Hz vocal presence (+1.0 dB, clarity and articulation)
+    - 6800 Hz de-esser (-2.5 dB, removes digital sibilance sizzle)
+    - Broadcast dynamic compression (2.6:1 optical leveling emulation)
+    - Analog harmonic saturation (soft tanh clipping for analog warmth)
+    - Broadcast loudness normalization (EBU R128 -16 LUFS, TruePeak -1.5 dB)
     """
     return (
         "highpass=f=80,"
-        "equalizer=f=250:t=q:w=1.2:g=1.5,"
-        "equalizer=f=6000:t=q:w=2.0:g=-1.5,"
-        "acompressor=threshold=-18dB:ratio=2.5:attack=20:release=150,"
+        "equalizer=f=180:t=q:w=1.2:g=2.2,"
+        "equalizer=f=3200:t=q:w=1.5:g=1.0,"
+        "equalizer=f=6800:t=q:w=2.2:g=-2.5,"
+        "acompressor=threshold=-18dB:ratio=2.6:attack=25:release=180,"
+        "asoftclip=type=tanh,"
         "loudnorm=I=-16:TP=-1.5:LRA=9"
     )
